@@ -1,191 +1,1989 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>收餐費工具</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 16px;
-      background-color: #f7f9fa;
-      color: #333;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    textarea {
-      width: 100%;
-      height: 120px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
-      resize: vertical;
-    }
-    .btn-submit {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      background-color: #007aff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .btn-submit:active {
-      background-color: #0056b3;
-    }
-    .stats {
-      margin: 16px 0 8px 0;
-      font-size: 14px;
-      color: #555;
-      display: flex;
-      justify-content: space-between;
-    }
-    .dept-title {
-      font-size: 15px;
-      font-weight: bold;
-      color: #666;
-      margin: 16px 0 6px 4px;
-      padding-left: 6px;
-      border-left: 4px solid #007aff;
-    }
-    .list-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    /* 收款按鈕樣式 */
-    .pay-btn {
-      width: 100%;
-      padding: 14px 16px;
-      background-color: #ffffff;
-      border: 2px solid #000000;
-      border-radius: 6px;
-      font-size: 18px;
-      font-weight: 500;
-      text-align: left;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .pay-btn:active {
-      transform: scale(0.99);
-    }
-    /* 已收款狀態（變灰、劃掉、半透明） */
-    .pay-btn.paid {
-      background-color: #e5e5ea;
-      border-color: #bbb;
-      color: #8e8e93;
-      text-decoration: line-through;
-      opacity: 0.6;
-    }
-    .amount {
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <title>
+        點餐工具
+    </title>
+    <style>
+        :root {
+            font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+            color: #233044;
+            background: #f5f7fa;
+            font-size: 15px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        button,
+        input,
+        textarea {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: .45;
+        }
+
+        .topbar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 17px 26px;
+            background: #fff;
+            border-bottom: 1px solid #e5e9ef;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 19px;
+            font-weight: 750;
+        }
+
+        .brandmark {
+            background: #e7f5ff;
+            color: #1573b5;
+            padding: 7px 10px;
+            border-radius: 10px;
+        }
+
+        .subtext {
+            font-size: 12px;
+            color: #738091;
+            margin-top: 2px;
+            font-weight: 400;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 9px 13px;
+            border-radius: 9px;
+            border: 1px solid #d7e0e9;
+            background: #fff;
+            color: #31445b;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: #f3f8fc;
+        }
+
+        .btn-primary {
+            background: #1680c3;
+            color: white;
+            border-color: #1680c3;
+        }
+
+        .btn-primary:hover {
+            background: #116da8;
+        }
+
+        .btn-danger {
+            color: #b44040;
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: minmax(380px, 1.05fr) minmax(480px, 1fr);
+            gap: 18px;
+            max-width: 1640px;
+            margin: 22px auto;
+            padding: 0 22px;
+            align-items: start;
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 5px 18px #2130470a;
+            min-width: 0;
+        }
+
+        .panel-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e7ebf0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .muted {
+            color: #778597;
+            font-size: 12px;
+        }
+
+        .left-body {
+            padding: 17px;
+        }
+
+        .raw-input {
+            width: 100%;
+            height: 295px;
+            resize: vertical;
+            border: 1px solid #cad6e2;
+            border-radius: 10px;
+            padding: 14px;
+            line-height: 1.8;
+            outline: 0;
+        }
+
+        .raw-input:focus,
+        .field:focus {
+            border-color: #268bc4;
+            box-shadow: 0 0 0 3px #1988cf1a;
+        }
+
+        .raw-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 11px;
+        }
+
+        .help {
+            font-size: 12px;
+            color: #69778a;
+            line-height: 1.75;
+            margin-top: 13px;
+        }
+
+        .help kbd {
+            border: 1px solid #c9d3dc;
+            border-bottom-width: 2px;
+            background: #fafbfc;
+            padding: 1px 5px;
+            border-radius: 5px;
+            color: #35485c;
+        }
+
+        .tokens-wrap {
+            height: min(67vh, 690px);
+            min-height: 450px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            position: relative;
+            border: 1px solid #e5ebf2;
+            border-radius: 10px;
+            background: #fff;
+            touch-action: auto;
+        }
+
+        .person {
+            padding: 12px 13px 14px;
+            border-bottom: 1px solid #d9e9f3;
+            line-height: 1.45;
+            min-height: 58px;
+        }
+
+        .person:last-child {
+            border-bottom: 0;
+        }
+
+        .person-head {
+            font-size: 14px;
+            font-weight: 650;
+            color: #3e5065;
+            display: inline;
+            margin-right: 8px;
+            word-break: break-all;
+        }
+
+        .token-list {
+            display: inline;
+            line-height: 2.85;
+        }
+
+        .token {
+            display: inline-block;
+            vertical-align: middle;
+            margin: 3px 4px 4px 0;
+            padding: 4px 9px;
+            border: 1px solid #b7c6d5;
+            background: #fff;
+            border-radius: 5px;
+            color: #273747;
+            line-height: 1.55;
+            font-size: 15px;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background .1s, border-color .1s;
+        }
+
+        .token:not(.disabled):hover {
+            background: #eaf4fc;
+            border-color: #80b9e0;
+        }
+
+        .token.selected {
+            background: #d5ecfc;
+            border-color: #2086c5;
+            box-shadow: inset 0 0 0 1px #2086c5;
+        }
+
+        .token.disabled {
+            background: #edf0f3;
+            color: #9ba4ae;
+            border-color: #e0e4e9;
+            cursor: default;
+            text-decoration: line-through;
+        }
+
+        .token.dragged {
+            opacity: .65;
+        }
+
+        .selection-rect {
+            position: fixed;
+            z-index: 9998;
+            border: 1px dashed #137ac0;
+            background: #1688d71b;
+            pointer-events: none;
+        }
+
+        .drag-ghost {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            background: #fff;
+            border: 1px solid #2493d0;
+            border-radius: 8px;
+            padding: 9px 12px;
+            box-shadow: 0 8px 25px #24486235;
+            max-width: 280px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        .drop-over {
+            outline: 2px solid #1689d0 !important;
+            outline-offset: 1px;
+            background: #eaf6ff !important;
+        }
+
+        .source-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .small-btn {
+            border: 1px solid #d8e1eb;
+            background: #fff;
+            border-radius: 7px;
+            padding: 6px 9px;
+            color: #486079;
+            font-size: 12px;
+        }
+
+        .small-btn:hover {
+            background: #f1f7fb;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 7px;
+            padding: 14px 15px 0;
+        }
+
+        .tab {
+            border: 1px solid #d5e0e9;
+            background: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            padding: 10px 23px;
+            font-weight: 650;
+            color: #516479;
+        }
+
+        .tab.active {
+            color: #147bb7;
+            background: #e5f4fe;
+            border-color: #9ed2f0;
+            border-bottom: 2px solid #1687c9;
+        }
+
+        .tab.drag-tab-hover {
+            background: #d0edff;
+            border-color: #1687c9;
+            box-shadow: inset 0 0 0 1px #1687c9;
+        }
+
+        .right-body {
+            padding: 18px;
+        }
+
+        /* 個人應付金額：與便當、飲料統計完全獨立 */
+        .personal-scroll {
+            height: min(67vh, 690px);
+            min-height: 450px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            padding: 1px 2px 12px;
+        }
+
+        .personal-group {
+            margin-bottom: 17px;
+            border: 1px solid #dfe8f1;
+            border-radius: 9px;
+            overflow: hidden;
+        }
+
+        .personal-group-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 13px;
+            background: #f1f7fc;
+            color: #314e65;
+            font-weight: 700;
+        }
+
+        .personal-entry {
+            display: grid;
+            grid-template-columns: 62px minmax(90px, 1fr) 116px;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 13px;
+            border-top: 1px solid #edf1f5;
+        }
+
+        .payment-toggle {
+            border: 1px solid #dfacac;
+            background: #fff5f5;
+            color: #ae4242;
+            border-radius: 7px;
+            padding: 7px 5px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .payment-toggle.is-paid {
+            border-color: #a7d5b9;
+            background: #eaf7ef;
+            color: #247448;
+        }
+
+        .payment-toggle:focus-visible {
+            outline: 2px solid #1689cc;
+            outline-offset: 2px;
+        }
+
+        .personal-entry label {
+            overflow-wrap: anywhere;
+        }
+
+        .personal-entry input {
+            text-align: right;
+        }
+
+        .personal-entry .missing-amount {
+            border-color: #e1a658;
+            background: #fff9ec;
+        }
+
+        .personal-summary {
+            padding: 13px 14px;
+            text-align: right;
+            border-top: 1px solid #dfe8f1;
+            background: #fbfdff;
+            font-weight: 650;
+        }
+
+        #personalView[hidden],
+        #standardOrderView[hidden] {
+            display: none !important;
+        }
+
+
+
+        .columns {
+            display: grid;
+            grid-template-columns: 26px minmax(118px, var(--name-width, 220px)) 92px 85px 95px 32px;
+            gap: 9px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .col-head {
+            font-size: 13px;
+            color: #607184;
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .item-head {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .resize-handle {
+            display: inline-block;
+            width: 7px;
+            height: 17px;
+            cursor: col-resize;
+            border-left: 2px solid #b6c3d2;
+            border-right: 2px solid #b6c3d2;
+            margin-left: 3px;
+        }
+
+        .order-scroll {
+            height: min(67vh, 690px);
+            min-height: 450px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            padding-bottom: 10px;
+        }
+
+        .order-grid {
+            min-width: max-content;
+            --name-width: 220px;
+        }
+
+        .order-row {
+            margin-bottom: 11px;
+            min-height: 46px;
+        }
+
+        .field-name {
+            height: auto;
+            min-height: 42px;
+            resize: none;
+            overflow: hidden;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.5;
+            align-self: stretch;
+        }
+
+        .order-row>.field:not(.field-name),
+        .order-row>.number-wrap,
+        .order-row>.delete-btn {
+            align-self: center;
+        }
+
+        .idx {
+            text-align: center;
+            color: #718196;
+        }
+
+        .field {
+            height: 42px;
+            min-width: 0;
+            width: 100%;
+            border: 1px solid #cbd7e1;
+            background: #fff;
+            border-radius: 7px;
+            padding: 7px 8px;
+            outline: 0;
+            color: #26384c;
+        }
+
+        .field[readonly] {
+            background: #f7fafc;
+            color: #40576d;
+        }
+
+        .number-wrap {
+            position: relative;
+        }
+
+        .number-wrap .field {
+            padding-right: 25px;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        .number-wrap .field::-webkit-inner-spin-button,
+        .number-wrap .field::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .spin {
+            position: absolute;
+            right: 1px;
+            width: 23px;
+            height: 20px;
+            border: 0;
+            border-left: 1px solid #d5dfe9;
+            background: #f5f8fa;
+            color: #516982;
+            line-height: 1;
+            font-size: 13px;
+            padding: 0;
+        }
+
+        .spin.up {
+            top: 1px;
+            border-bottom: 1px solid #d5dfe9;
+            border-radius: 0 6px 0 0;
+        }
+
+        .spin.down {
+            bottom: 1px;
+            border-radius: 0 0 6px 0;
+        }
+
+        .spin:hover {
+            background: #ddecf8;
+        }
+
+        .delete-btn {
+            border: 0;
+            background: transparent;
+            color: #db5260;
+            font-size: 24px;
+            line-height: 1;
+            padding: 0;
+            width: 31px;
+            height: 35px;
+            border-radius: 7px;
+        }
+
+        .delete-btn:hover {
+            background: #fff0f1;
+        }
+
+        .add-drop {
+            width: calc(100% - 12px);
+            margin: 8px 6px 6px;
+            min-height: 49px;
+            border: 1.5px dashed transparent;
+            border-radius: 8px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .14s;
+            color: #a9b7c4;
+        }
+
+        .add-drop .plus {
+            width: 31px;
+            height: 31px;
+            border: 1.5px solid #d3dde7;
+            border-radius: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 23px;
+            font-weight: 300;
+            color: #9eafbf;
+            line-height: 1;
+        }
+
+        .add-drop:hover,
+        .add-drop.force-show {
+            background: #f2f7fa;
+            border-color: #c8d6e3;
+        }
+
+        .add-drop:hover .plus,
+        .add-drop.force-show .plus {
+            color: #1689cc;
+            border-color: #7fbce2;
+        }
+
+        .add-drop.drop-over {
+            border: 1.5px dashed #1689cc !important;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            border-top: 1px solid #e6ebf1;
+            margin-top: 12px;
+            padding: 17px 4px 4px;
+            flex-wrap: wrap;
+        }
+
+        .field-pair {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 650;
+            color: #56687e;
+        }
+
+        .field-pair input {
+            width: 155px;
+        }
+
+        .money {
+            font-size: 18px;
+            color: #167bb6;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .grand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 16px 0 8px;
+            padding: 17px 18px;
+            background: #eaf5fe;
+            border: 1px solid #c6e6f8;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        .grand .money {
+            font-size: 25px;
+        }
+
+        .notice-stack {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 10001;
+            max-width: 390px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .notice {
+            background: white;
+            border: 1px solid #d8e3ed;
+            border-left: 4px solid #2096cf;
+            border-radius: 9px;
+            box-shadow: 0 7px 30px #29415c30;
+            padding: 12px 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notice.error {
+            border-left-color: #e25463;
+        }
+
+        .notice {
+            transition: opacity .25s ease, transform .25s ease;
+        }
+
+        .notice.dismiss {
+            opacity: 0;
+            transform: translateX(14px);
+            pointer-events: none;
+        }
+
+        .notice button {
+            border: 0;
+            background: #eff4f8;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .empty {
+            padding: 60px 20px;
+            text-align: center;
+            color: #8290a0;
+        }
+
+        .hintbar {
+            margin-top: 12px;
+            color: #7d8997;
+            font-size: 12px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            background: #edf5fb;
+            border: 1px solid #d5e9f7;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #3c799d;
+        }
+
+        .source-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .resizing * {
+            cursor: col-resize !important;
+            user-select: none !important;
+        }
+
+        @media (max-width: 1080px) {
+            .main {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            /* 左側接龍文字改成自然高度 */
+            .tokens-wrap {
+                height: auto;
+                min-height: 0;
+                overflow: visible;
+                overscroll-behavior: auto;
+            }
+
+            /* 右側訂單清單改成自然高度 */
+            .order-scroll {
+                height: auto;
+                min-height: 0;
+
+                /* 仍允許手動拉寬品項後水平捲動 */
+                overflow-x: auto;
+                overflow-y: hidden;
+
+                overscroll-behavior: auto;
+            }
+
+            .right-body {
+                padding: 14px;
+            }
+        }
+
+        @media(max-width:580px) {
+            .topbar {
+                padding: 13px;
+            }
+
+            .main {
+                padding: 0 10px;
+                margin: 12px auto;
+            }
+
+            .panel-header {
+                padding: 12px;
+            }
+
+            .left-body {
+                padding: 12px;
+            }
+
+            .right-body {
+                padding: 9px;
+            }
+
+            .tab {
+                padding: 8px 17px;
+            }
+
+            .order-footer {
+                align-items: stretch;
+            }
+
+            .field-pair input {
+                width: 125px;
+            }
+
+        }
+
+        @media (max-width: 1080px) {
+            .personal-scroll {
+                height: auto;
+                min-height: 0;
+                overflow: visible;
+                overscroll-behavior: auto;
+            }
+        }
+    </style>
 </head>
+
 <body>
+    <header class="topbar">
+        <div class="brand">
+            <span class="brandmark">
+                ☷
+            </span>
+            <div>
+                點餐工具
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn" id="undoBtn" title="Ctrl+Z">
+                ↶ 復原
+            </button>
+            <button class="btn" id="redoBtn" title="Ctrl+Y">
+                ↷ 重做
+            </button>
+            <button class="btn" id="exportBtn">
+                匯出備份
+            </button>
+            <button class="btn" id="importBtn">
+                匯入備份
+            </button>
+            <button class="btn btn-primary" id="copyBtn">
+                複製訂單摘要
+            </button>
+        </div>
+    </header>
+    <main class="main">
+        <section class="panel">
+            <div class="panel-header">
+                <h2>
+                    文字內容
+                </h2>
+                <span class="muted" id="sourceInfo">
+                </span>
+            </div>
+            <div class="left-body">
+                <div id="inputView">
+                    <textarea autocomplete="off" class="raw-input" id="rawText"
+                        placeholder="請貼上 LINE 群組的接龍文字…"></textarea>
+                    <div class="raw-actions">
+                        <button class="btn btn-primary" id="parseBtn">
+                            確認
+                        </button>
+                    </div>
 
-  <h2>收餐費工具</h2>
-  <textarea id="inputText" placeholder="貼上文字..."></textarea>
-  <button class="btn-submit" onclick="parseList()">確認</button>
+                </div>
+                <div hidden="" id="tokensView">
+                    <div class="source-toolbar">
+                        <span class="status-pill" id="selectionInfo">
+                            已選取 0 項
+                        </span>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap">
+                            <button class="small-btn" id="clearSelection">
+                                取消全部選取
+                            </button>
+                            <button class="small-btn" id="restoreAll" title="將所有灰色來源恢復為一般狀態">
+                                全部解除 Disabled
+                            </button>
+                            <button class="small-btn" id="editSource">
+                                重新貼上／編輯
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tokens-wrap" id="tokensWrap">
+                        <div id="peopleList">
+                        </div>
+                    </div>
+                    <div class="source-footer">
+                        <span class="muted" id="tokenSummary">
+                        </span>
+                    </div>
+                    <p class="help">
+                        <b>
+                            點擊
+                        </b>
+                        切換選取；
+                        <kbd>
+                            Ctrl
+                        </kbd>
+                        ＋點擊切換 Disabled；空白處拖拉可框選（可累積）；從已選取物件拖曳可搬運整批。成功後僅本次搬運的物件變灰。Ctrl＋框選不提供。
+                    </p>
+                </div>
+            </div>
+        </section>
+        <section class="panel">
+            <div class="panel-header">
+                <h2>
+                    訂單統計
+                </h2>
+                <span class="muted">
+                    拖曳左側區塊至右側欄位
+                </span>
+            </div>
+            <div class="tabs">
+                <button class="tab active" data-tab="meal">
+                    便當
+                </button>
+                <button class="tab" data-tab="drink">
+                    飲料
+                </button>
+                <button class="tab" data-tab="personal">
+                    個人金額
+                </button>
+            </div>
+            <div class="right-body">
+                <div id="standardOrderView">
+                    <div class="order-scroll">
+                        <div class="order-grid" id="orderGrid">
+                            <div class="columns">
+                                <span>
+                                </span>
+                                <span class="col-head item-head">
+                                    品項
+                                    <span class="resize-handle" id="resizeHandle" title="拖動調整品項欄寬">
+                                    </span>
+                                </span>
+                                <span class="col-head">
+                                    價格
+                                </span>
+                                <span class="col-head">
+                                    數量
+                                </span>
+                                <span class="col-head">
+                                    小計
+                                </span>
+                                <span>
+                                </span>
+                            </div>
+                            <div id="orderRows">
+                            </div>
+                            <button aria-label="新增品項" class="add-drop" data-drop="add" id="addRow">
+                                <span class="plus">
+                                    ＋
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="order-footer">
+                        <label class="field-pair">
+                            TEL:
+                            <input autocomplete="off" class="field" id="phone" placeholder="店家電話" type="tel" />
+                        </label>
+                        <div class="field-pair">
+                            本頁總計：
+                            <span class="money" id="categoryTotal">
+                                $0
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grand">
+                        <span>
+                            便當 ＋ 飲料　合計
+                        </span>
+                        <span class="money" id="grandTotal">
+                            $0
+                        </span>
+                    </div>
+                    <p class="hintbar">
+                        小計可手動修改；小計右鍵可切換回自動計算。價格空白視為 0。重新整理或重開頁面會清空資料；需要保留時請使用匯出備份。
+                    </p>
+                </div>
+                <div id="personalView" hidden>
+                    <div class="personal-scroll" id="personalScroll">
+                        <div id="personalGroups"></div>
+                    </div>
+                    <div class="grand">
+                        <span>個人應付金額合計</span>
+                        <span class="money" id="personalTotal">$0</span>
+                    </div>
+                    <p class="hintbar">依科別分組；沒有科別的人列在「未分類」。每人預設取接龍最後一個數字，金額可手動修正。此處不影響便當及飲料總計。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    <input accept=".json,application/json" hidden="" id="importFile" type="file" />
+    <div aria-live="polite" class="notice-stack" id="notices">
+    </div>
+    <script>
+        (() => {
+            'use strict';
+            const $ = s => document.querySelector(s);
+            const $$ = s => Array.from(document.querySelectorAll(s));
+            const newRow = () => ({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9), name: '', price: '', qty: 0, manual: null });
+            const fresh = () => ({ raw: '', parsed: false, people: [], tokens: [], active: 'meal', categories: { meal: { rows: [newRow(), newRow(), newRow()], phone: '' }, drink: { rows: [newRow(), newRow(), newRow()], phone: '' } }, width: null, personal: [] });
+            let state = fresh(), undo = [], redo = [], seq = 0, pointer = null, suppressClick = false, highlighted = null, noticeTimer = null;
+            function snapshot() {
+                return JSON.stringify(state);
+            }
+            function pushHistory(before) {
+                const after = snapshot();
+                if (after === before)
+                    return;
+                undo.push(before);
+                if (undo.length > 100)
+                    undo.shift();
+                redo = [];
+                updateUndo();
+            }
+            function updateUndo() {
+                $('#undoBtn').disabled = !undo.length;
+                $('#redoBtn').disabled = !redo.length;
+            }
+            function undoOp() {
+                if (!undo.length)
+                    return;
+                redo.push(snapshot());
+                state = JSON.parse(undo.pop());
+                renderAll();
+                updateUndo();
+            }
+            function redoOp() {
+                if (!redo.length)
+                    return;
+                undo.push(snapshot());
+                state = JSON.parse(redo.pop());
+                renderAll();
+                updateUndo();
+            }
+            function notify(msg, type = 'info') {
+                const el = document.createElement('div');
+                el.className = 'notice ' + (type === 'error' ? 'error' : '');
+                const text = document.createElement('span');
+                text.textContent = msg;
+                el.append(text);
+                const dismiss = () => {
+                    if (el.classList.contains('dismiss'))
+                        return;
+                    el.classList.add('dismiss');
+                    setTimeout(() => el.remove(), 260);
+                };
+                {
+                    const b = document.createElement('button');
+                    b.textContent = '關閉';
+                    b.onclick = dismiss;
+                    el.append(b);
+                }
+                $('#notices').prepend(el);
+                setTimeout(dismiss, 1500);
+            }
+            function parseText(src) {
+                const text = src.replace(/\r\n?/g, '\n').trim();
+                if (!text)
+                    return { error: '請先貼上接龍文字' };
+                // Every non-empty physical line is one person's order. A number is optional,
+                // and can be written as "14.", "14．", "14、" or simply "14".
+                const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+                const people = [], tokens = [];
+                for (const line of lines) {
+                    const pre = line.match(/^(\d{1,4})([.．、]\s*|(?=[（(\p{Script=Han}])|\s+(?=[（(\p{Script=Han}]))/u);
+                    const prefix = pre ? pre[0] : '';
+                    const rest = line.slice(prefix.length).trim();
+                    let header = '', menu = '';
+                    const mark = rest.search(/[:：]/);
+                    if (mark >= 0) {
+                        header = rest.slice(0, mark + 1).trim();
+                        menu = rest.slice(mark + 1).trim();
+                    }
+                    else {
+                        const m = rest.match(/^((?:[（(][^）)]+[）)])?\s*[^\s+＝=]+?)\s+(.+)$/u);
+                        if (m) {
+                            header = m[1];
+                            menu = m[2];
+                        }
+                        else {
+                            header = '';
+                            menu = rest;
+                        }
+                    }
+                    const pid = 'p' + people.length;
+                    people.push({ id: pid, header: prefix + header, raw: menu });
+                    splitMenu(menu).forEach((word, j) => tokens.push({ id: pid + 't' + j, pid, text: word, status: 'normal', selOrder: 0, order: tokens.length }));
+                }
+                return { people, tokens };
+            }
+            function splitMenu(s) {
+                const chunks = [];
+                let buf = '', depth = 0;
+                for (const ch of s) {
+                    if (ch === '(' || ch === '（') {
+                        depth++;
+                        buf += ch;
+                        continue;
+                    }
+                    if (ch === ')' || ch === '）') {
+                        depth = Math.max(0, depth - 1);
+                        buf += ch;
+                        continue;
+                    }
+                    if (depth === 0 && (/[\s+＋=＝,，;；]/u).test(ch)) {
+                        if (buf.trim())
+                            chunks.push(buf.trim());
+                        buf = '';
+                        continue;
+                    }
+                    buf += ch;
+                }
+                if (buf.trim())
+                    chunks.push(buf.trim());
+                // Only split a number at the end of a nonnumeric token. Keep parentheses and
+                // their contents together, including suffix notes such as (+辣).
+                const result = [];
+                for (const part of chunks) {
+                    const match = part.match(/^(.*?)(\d+(?:\.\d+)?)(\s*(?:(?:\([^()]*\))|(?:（[^（）]*）))*)$/u);
+                    if (match && match[1].trim()) {
+                        const name = (match[1] + (match[3] || '')).trim();
+                        if (name)
+                            result.push(name);
+                        result.push(match[2]);
+                    }
+                    else
+                        result.push(part);
+                }
+                return result;
+            }
+            // 從原始每筆接龍建立個人金額，與右側品項訂單分開保存。
+            function buildPersonalRows(people) {
+                return people.map(p => {
+                    const header = p.header.replace(/^\s*\d{1,4}(?:[.．、]\s*)?/, '').trim();
+                    const deptMatch = header.match(/^[（(]([^（）()]+)[）)]/);
+                    const department = deptMatch ? deptMatch[1].trim() : '未分類';
+                    const name = header
+                        .replace(/^[（(][^（）()]+[）)]\s*/, '')
+                        .replace(/[：:]\s*$/, '')
+                        .trim() || '未辨識姓名';
+                    // splitMenu 已保護括號並將結尾價錢分離；取最後一個純數字區塊。
+                    const parts = splitMenu(p.raw);
+                    const numeric = parts.filter(part => /^\d+(?:\.\d+)?$/.test(part));
+                    const amount = numeric.length ? numeric[numeric.length - 1] : '';
+                    return { id: p.id, department, name, amount, paid: false };
+                });
+            }
 
-  <div class="stats" id="stats"></div>
-  <div class="list-container" id="btnContainer"></div>
+            function personalAmount(value) {
+                const num = Number(value);
+                return value !== '' && Number.isFinite(num) && num >= 0 ? num : 0;
+            }
 
-  <script>
-    function parseList() {
-      const text = document.getElementById('inputText').value;
-      const lines = text.split('\n');
-      const container = document.getElementById('btnContainer');
-      container.innerHTML = '';
+            function renderPersonal() {
+                const container = $('#personalGroups');
+                container.replaceChildren();
+                const groups = new Map();
+                for (const person of state.personal || []) {
+                    const department = person.department || '未分類';
+                    if (!groups.has(department)) groups.set(department, []);
+                    groups.get(department).push(person);
+                }
+                // 沒有科別的姓名統一放在最後，其餘科別按接龍首次出現順序。
+                const names = [...groups.keys()].filter(x => x !== '未分類');
+                if (groups.has('未分類')) names.push('未分類');
+                for (const department of names) {
+                    const people = groups.get(department);
+                    const section = document.createElement('section');
+                    section.className = 'personal-group';
+                    const heading = document.createElement('div');
+                    heading.className = 'personal-group-title';
+                    const title = document.createElement('span');
+                    title.textContent = department + '（' + people.length + ' 人）';
+                    const groupTotal = document.createElement('span');
+                    groupTotal.className = 'personal-group-total';
+                    groupTotal.dataset.department = department;
+                    heading.append(title, groupTotal);
+                    section.append(heading);
+                    for (const person of people) {
+                        const row = document.createElement('div');
+                        row.className = 'personal-entry';
+                        const payment = document.createElement('button');
+                        payment.type = 'button';
+                        payment.className = 'payment-toggle' + (person.paid ? ' is-paid' : '');
+                        payment.dataset.paymentId = person.id;
+                        payment.textContent = person.paid ? '已收' : '未收';
+                        payment.setAttribute('aria-pressed', String(!!person.paid));
+                        payment.setAttribute('aria-label', person.name + '收款狀態：' + payment.textContent);
+                        const name = document.createElement('label');
+                        name.textContent = person.name;
+                        const input = document.createElement('input');
+                        input.className = 'field personal-amount' + (person.amount === '' ? ' missing-amount' : '');
+                        input.type = 'number';
+                        input.min = '0';
+                        input.step = 'any';
+                        input.placeholder = '待確認';
+                        input.value = person.amount;
+                        input.dataset.personId = person.id;
+                        input.setAttribute('aria-label', person.name + '應付金額');
+                        row.append(payment, name, input);
+                        section.append(row);
+                    }
+                    container.append(section);
+                }
+                if (!names.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty';
+                    empty.textContent = '請先貼上並解析 LINE 接龍文字';
+                    container.append(empty);
+                }
+                refreshPersonalTotals();
+            }
 
-      let items = [];
+            function refreshPersonalTotals() {
+                const rows = state.personal || [];
+                const sum = rows.reduce((total, p) => total + personalAmount(p.amount), 0);
+                $('#personalTotal').textContent = '$' + money(sum);
+                document.querySelectorAll('.personal-group-total').forEach(el => {
+                    const groupSum = rows.filter(p => (p.department || '未分類') === el.dataset.department)
+                        .reduce((total, p) => total + personalAmount(p.amount), 0);
+                    el.textContent = '$' + money(groupSum);
+                });
+            }
 
-      lines.forEach(line => {
-        let trimmed = line.trim();
-        if (!trimmed) return;
+            function esc(s) {
+                return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            }
+            function selected() {
+                return state.tokens.filter(t => t.status === 'selected');
+            }
+            function updateSourceStats() {
+                $('#selectionInfo').textContent = '已選取 ' + selected().length + ' 項';
+                $('#sourceInfo').textContent = state.parsed ? state.people.length + ' 人 · ' + state.tokens.length + ' 個區塊' : '';
+                $('#tokenSummary').textContent = state.tokens.filter(t => t.status === 'disabled').length + ' / ' + state.tokens.length + ' 個區塊已處理';
+            }
+            function renderSource() {
+                $('#inputView').hidden = state.parsed;
+                $('#tokensView').hidden = !state.parsed;
+                $('#rawText').value = state.raw;
+                if (!state.parsed) {
+                    updateSourceStats();
+                    return;
+                }
+                const list = $('#peopleList');
+                list.innerHTML = '';
+                for (const p of state.people) {
+                    const div = document.createElement('div');
+                    div.className = 'person';
+                    div.dataset.pid = p.id;
+                    const heading = document.createElement('span');
+                    heading.className = 'person-head';
+                    heading.textContent = p.header || '(無法辨識姓名)：';
+                    div.append(heading);
+                    const ts = document.createElement('span');
+                    ts.className = 'token-list';
+                    for (const token of state.tokens.filter(t => t.pid === p.id)) {
+                        const btn = document.createElement('span');
+                        btn.className = 'token ' + (token.status === 'selected' ? 'selected' : token.status === 'disabled' ? 'disabled' : '');
+                        btn.dataset.token = token.id;
+                        btn.textContent = token.text;
+                        btn.setAttribute('role', 'button');
+                        btn.tabIndex = 0;
+                        ts.append(btn);
+                    }
+                    div.append(ts);
+                    list.append(div);
+                }
+                updateSourceStats();
+            }
+            function money(v) {
+                const n = Number(v);
+                return Number.isFinite(n) ? n.toLocaleString('zh-TW', { maximumFractionDigits: 2 }) : '0';
+            }
+            function rowTotal(r) {
+                return r.manual !== null && r.manual !== undefined ? Number(r.manual) || 0 : (Number(r.price) || 0) * (Number(r.qty) || 0);
+            }
+            function catTotal(c) {
+                return state.categories[c].rows.reduce((s, r) => s + rowTotal(r), 0);
+            }
+            function refreshTotals() {
+                const cat = catTotal(state.active);
+                $('#categoryTotal').textContent = '$' + money(cat);
+                $('#grandTotal').textContent = '$' + money(catTotal('meal') + catTotal('drink'));
+                $$('[data-subtotal]').forEach(input => {
+                    const r = state.categories[state.active].rows.find(r => r.id === input.dataset.subtotal);
+                    if (r && document.activeElement !== input) {
+                        input.value = String(rowTotal(r));
+                        input.title = r.manual === null ? '自動計算' : '手動小計：右鍵恢復自動';
+                    }
+                });
+            }
+            function autoSizeNames() {
+                document.querySelectorAll('.field-name').forEach(el => {
+                    el.style.height = 'auto';
+                    el.style.height = Math.max(42, el.scrollHeight + 2) + 'px';
+                });
+            }
+            // Default column width adapts to the visible order panel; manual resizing overrides this.
+            // Other grid columns total 330px, with five 9px gaps (45px).
+            function fittedNameWidth() {
+                const space = $('.order-scroll').clientWidth;
+                return Math.max(118, Math.min(220, space - 26 - 92 - 85 - 95 - 32 - 5 * 9 - 6));
+            }
+            function applyNameWidth() {
+                $('#orderGrid').style.setProperty('--name-width', (state.width === null ? fittedNameWidth() : state.width) + 'px');
+                autoSizeNames();
+            }
+            function renderRows() {
+                $$('.tab').forEach(b => {
+                    const on = b.dataset.tab === state.active;
+                    b.classList.toggle('active', on);
+                    b.setAttribute('aria-selected', String(on));
+                });
+                const isPersonal = state.active === 'personal';
+                $('#standardOrderView').hidden = isPersonal;
+                $('#personalView').hidden = !isPersonal;
+                if (isPersonal) {
+                    renderPersonal();
+                    return;
+                }
+                const body = $('#orderRows');
+                body.innerHTML = '';
+                state.categories[state.active].rows.forEach((r, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'columns order-row';
+                    div.dataset.row = r.id;
+                    div.innerHTML = `<span class="idx">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
+                    body.append(div);
+                });
+                applyNameWidth();
+                $('#phone').value = state.categories[state.active].phone;
+                refreshTotals();
+            }
+            function renderAll() {
+                renderSource();
+                renderRows();
+                updateUndo();
+            }
+            function setStatus(ids, status) {
+                let change = false;
+                for (const t of state.tokens) {
+                    if (ids.includes(t.id) && t.status !== status) {
+                        t.status = status;
+                        t.selOrder = 0;
+                        change = true;
+                    }
+                }
+                if (change) {
+                    renderSource();
+                }
+            }
+            $('#parseBtn').onclick = () => {
+                const raw = $('#rawText').value;
+                const result = parseText(raw);
+                if (result.error) {
+                    notify(result.error, 'error');
+                    return;
+                }
+                const before = snapshot();
+                state.raw = raw;
+                state.people = result.people;
+                state.tokens = result.tokens;
+                state.personal = buildPersonalRows(result.people);
+                state.parsed = true;
+                pushHistory(before);
+                renderAll();
+                notify('已解析 ' + state.people.length + ' 筆接龍、' + state.tokens.length + ' 個物件');
+            };
+            $('#editSource').onclick = () => {
+                state.parsed = false;
+                renderSource();
+            };
+            $('#clearSelection').onclick = () => {
+                state.tokens.forEach(t => {
+                    if (t.status === 'selected')
+                        t.status = 'normal';
+                });
+                renderSource();
+            };
+            $('#restoreAll').onclick = () => {
+                const before = snapshot();
+                state.tokens.forEach(t => {
+                    if (t.status === 'disabled')
+                        t.status = 'normal';
+                });
+                pushHistory(before);
+                renderSource();
+            };
+            $$('.tab').forEach(b => b.onclick = () => {
+                state.active = b.dataset.tab;
+                renderRows();
+            });
+            function addRow() {
+                const before = snapshot();
+                state.categories[state.active].rows.push(newRow());
+                pushHistory(before);
+                renderRows();
+                return state.categories[state.active].rows.at(-1);
+            }
+            $('#addRow').onclick = () => {
+                addRow();
+            };
+            $('#orderRows').addEventListener('click', e => {
+                const remove = e.target.closest('[data-remove]');
+                if (remove) {
+                    const rows = state.categories[state.active].rows;
+                    const i = rows.findIndex(r => r.id === remove.dataset.remove);
+                    if (i < 0)
+                        return;
+                    const before = snapshot();
+                    rows.splice(i, 1);
+                    pushHistory(before);
+                    renderRows();
+                    return;
+                }
+                const spin = e.target.closest('[data-spin]');
+                if (spin) {
+                    const r = getRow(spin.dataset.id);
+                    if (!r)
+                        return;
+                    const before = snapshot();
+                    r.qty = Math.max(0, (Number(r.qty) || 0) + Number(spin.dataset.spin));
+                    pushHistory(before);
+                    renderRows();
+                }
+            });
+            function getRow(id) {
+                return state.categories[state.active].rows.find(r => r.id === id);
+            }
+            const editBefore = new WeakMap();
+            // 個人收款狀態與應付金額分開管理；每次切換可使用上方復原／重做。
+            $('#personalGroups').addEventListener('click', e => {
+                const button = e.target.closest('[data-payment-id]');
+                if (!button) return;
+                const person = (state.personal || []).find(p => p.id === button.dataset.paymentId);
+                if (!person) return;
+                const before = snapshot();
+                person.paid = !person.paid;
+                pushHistory(before);
+                button.textContent = person.paid ? '已收' : '未收';
+                button.classList.toggle('is-paid', person.paid);
+                button.setAttribute('aria-pressed', String(person.paid));
+                button.setAttribute('aria-label', person.name + '收款狀態：' + button.textContent);
+            });
+            $('#personalGroups').addEventListener('focusin', e => {
+                if (e.target.matches('.personal-amount'))
+                    editBefore.set(e.target, snapshot());
+            });
+            $('#personalGroups').addEventListener('input', e => {
+                if (!e.target.matches('.personal-amount')) return;
+                const p = (state.personal || []).find(p => p.id === e.target.dataset.personId);
+                if (!p) return;
+                p.amount = e.target.value;
+                e.target.classList.toggle('missing-amount', p.amount === '');
+                refreshPersonalTotals();
+            });
+            $('#personalGroups').addEventListener('focusout', e => {
+                if (!e.target.matches('.personal-amount')) return;
+                const before = editBefore.get(e.target);
+                if (before !== undefined) pushHistory(before);
+                editBefore.delete(e.target);
+            });
 
-        // 1. 去除開頭序號 (如 "1.", "1 ", "1、")
-        trimmed = trimmed.replace(/^\d+[\.\、\s]*/, '');
-
-        // 2. 擷取姓名/科室（冒號前的文字，若無冒號則抓第一個空格前）
-        let nameMatch = trimmed.match(/^([^:：]+)[：:]/);
-        let fullName = '';
-        if (nameMatch) {
-          fullName = nameMatch[1].trim();
-        } else {
-          let parts = trimmed.split(/\s+/);
-          fullName = parts[0];
-        }
-
-        // 3. 擷取單位 (支援 (科室) 或 （科室）)
-        let deptMatch = fullName.match(/[\(（](.+?)[\)）]/);
-        let dept = deptMatch ? deptMatch[1].trim() : '其他';
-
-        // 4. 擷取金額（行末最後一串數字）
-        let amountMatch = trimmed.match(/(\d+)\s*$/);
-        let amount = amountMatch ? amountMatch[1] : '';
-
-        if (fullName && amount) {
-          items.push({ dept, fullName, amount });
-        }
-      });
-
-      // 依單位排序
-      items.sort((a, b) => a.dept.localeCompare(b.dept, 'zh-Hant'));
-
-      // 依單位分組呈現
-      let currentDept = '';
-      items.forEach(item => {
-        // 切換單位時插入分組標題
-        if (item.dept !== currentDept) {
-          currentDept = item.dept;
-          const deptHeader = document.createElement('div');
-          deptHeader.className = 'dept-title';
-          deptHeader.textContent = currentDept;
-          container.appendChild(deptHeader);
-        }
-
-        const btn = document.createElement('button');
-        btn.className = 'pay-btn';
-        btn.innerHTML = `<span>${item.fullName}</span><span class="amount">${item.amount}</span>`;
-        
-        btn.onclick = function() {
-          this.classList.toggle('paid');
-          updateStats();
-        };
-
-        container.appendChild(btn);
-      });
-
-      updateStats();
-    }
-
-    function updateStats() {
-      const allBtns = document.querySelectorAll('.pay-btn');
-      const paidBtns = document.querySelectorAll('.pay-btn.paid');
-      const stats = document.getElementById('stats');
-
-      if (allBtns.length > 0) {
-        stats.innerHTML = `<span>已收：${paidBtns.length} / ${allBtns.length} 人</span>`;
-      } else {
-        stats.innerHTML = '';
-      }
-    }
-  </script>
+            $('#orderRows').addEventListener('focusin', e => {
+                if (e.target.matches('[data-field],[data-subtotal]'))
+                    editBefore.set(e.target, snapshot());
+            });
+            $('#orderRows').addEventListener('input', e => {
+                const input = e.target;
+                if (!input.matches('[data-field],[data-subtotal]'))
+                    return;
+                const r = getRow(input.dataset.id || input.dataset.subtotal);
+                if (!r)
+                    return;
+                if (input.dataset.field === 'name') {
+                    r.name = input.value;
+                    autoSizeNames();
+                }
+                else if (input.dataset.field === 'price')
+                    r.price = input.value;
+                else if (input.dataset.field === 'qty')
+                    r.qty = input.value === '' ? 0 : Math.max(0, Math.trunc(Number(input.value) || 0));
+                else if (input.dataset.field === 'subtotal')
+                    r.manual = input.value === '' ? 0 : Number(input.value) || 0;
+                refreshTotals();
+            });
+            $('#orderRows').addEventListener('focusout', e => {
+                const input = e.target;
+                if (!input.matches('[data-field],[data-subtotal]'))
+                    return;
+                const before = editBefore.get(input);
+                if (before)
+                    pushHistory(before);
+                if (input.dataset.field === 'qty' && input.isConnected) {
+                    const r = getRow(input.dataset.id);
+                    if (r)
+                        input.value = r.qty;
+                }
+                refreshTotals();
+            });
+            $('#orderRows').addEventListener('contextmenu', e => {
+                const input = e.target.closest('[data-subtotal]');
+                if (!input)
+                    return;
+                e.preventDefault();
+                const r = getRow(input.dataset.subtotal);
+                if (!r || r.manual === null)
+                    return;
+                const before = snapshot();
+                r.manual = null;
+                pushHistory(before);
+                input.value = String(rowTotal(r));
+                refreshTotals();
+                notify('小計已恢復自動計算');
+            });
+            $('#phone').addEventListener('focus', () => {
+                editBefore.set($('#phone'), snapshot());
+            });
+            $('#phone').addEventListener('input', e => {
+                state.categories[state.active].phone = e.target.value;
+            });
+            $('#phone').addEventListener('blur', () => {
+                const before = editBefore.get($('#phone'));
+                if (before)
+                    pushHistory(before);
+                editBefore.delete($('#phone'));
+            });
+            // Price is a standalone numeric token; mixed text+trailing number can be parsed as a dish.
+            function pureNumber(s) {
+                return /^\d+(?:\.\d+)?$/.test(s.trim());
+            }
+            function splitPrice(raw) {
+                const s = raw.trim();
+                if (pureNumber(s))
+                    return { name: '', price: s };
+                const m = s.match(/^(.*?)(\d+(?:\.\d+)?)(\s*(?:\([^()]*\)|（[^（）]*）))*$/u);
+                if (m && m[1].trim() && !/^\d+$/.test(m[1].trim()))
+                    return { name: (m[1] + (m[3] || '')).trim(), price: m[2] };
+                return { name: s, price: null };
+            }
+            function interpret(tokens) {
+                const arranged = [...tokens].sort((a, b) => a.order - b.order);
+                const names = [], prices = [];
+                for (const t of arranged) {
+                    const s = splitPrice(t.text);
+                    if (s.name)
+                        names.push(s.name);
+                    if (s.price !== null)
+                        prices.push({ price: s.price, order: t.selOrder || 0, idx: t.order });
+                }
+                prices.sort((a, b) => a.order - b.order || a.idx - b.idx);
+                return { names, price: prices.length ? prices.at(-1).price : null, nonNumeric: arranged.filter(t => !pureNumber(t.text)).length, raw: arranged.map(t => t.text).join(' ') };
+            }
+            function decideDrop(kind, row, tokens) {
+                if (!tokens.length)
+                    return { error: '請先選取左側項目' };
+                if (kind === 'subtotal')
+                    return { error: '小計欄位不接受拖曳' };
+                const info = interpret(tokens);
+                if (kind === 'price') {
+                    if (tokens.length !== 1)
+                        return { error: '價格欄位一次只能接收一個物件' };
+                    if (!pureNumber(tokens[0].text))
+                        return { error: '價格欄位只接受純數字區塊' };
+                    if (row.price === tokens[0].text)
+                        return { error: '價格沒有變化，未處理來源物件' };
+                    return { row: { ...row, price: tokens[0].text } };
+                }
+                const next = { ...row };
+                if (kind === 'name' && row.name.trim()) {
+                    next.name = (row.name.trim() + ' ' + info.raw).trim();
+                    return { row: next };
+                }
+                if (kind === 'name' || (kind === 'qty' && Number(row.qty) === 0)) {
+                    if (!info.names.length && !row.name.trim())
+                        return { error: '無法建立品項：請至少選取一個餐點名稱' };
+                    if (!next.name.trim() && info.names.length)
+                        next.name = info.names.join(' ');
+                    if ((next.price === '' || next.price == null) && info.price !== null)
+                        next.price = info.price;
+                    next.qty = (Number(next.qty) || 0) + 1;
+                    return { row: next };
+                }
+                if (kind === 'qty') {
+                    next.qty = (Number(next.qty) || 0) + info.nonNumeric;
+                    if (!next.name.trim() && info.names.length)
+                        next.name = info.names.join(' ');
+                    if ((next.price === '' || next.price == null) && info.price !== null)
+                        next.price = info.price;
+                    if (next.qty === Number(row.qty) && next.price === row.price && next.name === row.name)
+                        return { error: '沒有可增加的數量，且沒有空白欄位可補入' };
+                    return { row: next };
+                }
+                return { error: '不支援此拖放位置' };
+            }
+            function commitDrop(target, tokens) {
+                let kind = target.dataset.drop;
+                if (!kind)
+                    return false;
+                const before = snapshot();
+                let newItem = false, row;
+                if (kind === 'add') {
+                    row = newRow();
+                    kind = 'name';
+                    newItem = true;
+                }
+                else {
+                    const rowEl = target.closest('[data-row]');
+                    row = rowEl ? getRow(rowEl.dataset.row) : null;
+                    if (!row) {
+                        notify('找不到有效的訂單欄位', 'error');
+                        return false;
+                    }
+                }
+                const result = decideDrop(kind, row, tokens);
+                if (result.error) {
+                    notify(result.error, 'error');
+                    return false;
+                }
+                if (newItem)
+                    state.categories[state.active].rows.push(result.row);
+                else
+                    Object.assign(row, result.row);
+                const ids = new Set(tokens.map(t => t.id));
+                state.tokens.forEach(t => {
+                    if (ids.has(t.id)) {
+                        t.status = 'disabled';
+                        t.selOrder = 0;
+                    }
+                });
+                pushHistory(before);
+                renderSource();
+                renderRows();
+                return true;
+            }
+            // Pointer-based selection / rubber band / drag. Ctrl+marquee is deliberately not implemented.
+            const wrap = $('#tokensWrap');
+            let selectionBox = null, ghost = null, tabHoverTimer = null, hoveredTab = null;
+            function getTokenById(id) {
+                return state.tokens.find(t => t.id === id);
+            }
+            function syncTokenClasses() {
+                $$('.token').forEach(el => {
+                    const t = getTokenById(el.dataset.token);
+                    if (!t)
+                        return;
+                    el.classList.toggle('selected', t.status === 'selected');
+                    el.classList.toggle('disabled', t.status === 'disabled');
+                });
+                updateSourceStats();
+            }
+            function toggleToken(t, ctrl) {
+                if (ctrl) {
+                    t.status = t.status === 'disabled' ? 'normal' : 'disabled';
+                    t.selOrder = 0;
+                }
+                else if (t.status !== 'disabled') {
+                    t.status = t.status === 'selected' ? 'normal' : 'selected';
+                    t.selOrder = t.status === 'selected' ? ++seq : 0;
+                }
+                syncTokenClasses();
+            }
+            wrap.addEventListener('pointerdown', e => {
+                if (e.button !== 0 || !state.parsed)
+                    return;
+                const tokenEl = e.target.closest('[data-token]');
+                const token = tokenEl ? getTokenById(tokenEl.dataset.token) : null;
+                if (e.ctrlKey) {
+                    if (token) {
+                        e.preventDefault();
+                        pointer = { mode: 'ctrl', token, startX: e.clientX, startY: e.clientY };
+                        wrap.setPointerCapture?.(e.pointerId);
+                    }
+                    return;
+                }
+                if (token?.status === 'disabled')
+                    return;
+                e.preventDefault();
+                pointer = { mode: token ? 'pendingToken' : 'pendingMarquee', token, startX: e.clientX, startY: e.clientY, selectionStart: new Set(selected().map(t => t.id)), lastTarget: null, dragTokens: null };
+                try {
+                    wrap.setPointerCapture(e.pointerId);
+                }
+                catch (err) {
+                }
+            });
+            function makeRect() {
+                selectionBox = document.createElement('div');
+                selectionBox.className = 'selection-rect';
+                document.body.append(selectionBox);
+            }
+            function moveRect(x, y) {
+                if (!selectionBox)
+                    makeRect();
+                const l = Math.min(pointer.startX, x), t = Math.min(pointer.startY, y), r = Math.max(pointer.startX, x), b = Math.max(pointer.startY, y);
+                Object.assign(selectionBox.style, { left: l + 'px', top: t + 'px', width: (r - l) + 'px', height: (b - t) + 'px' });
+                state.tokens.forEach(token => {
+                    if (token.status === 'disabled')
+                        return;
+                    const el = $(`[data-token="${token.id}"]`);
+                    if (!el)
+                        return;
+                    const box = el.getBoundingClientRect();
+                    const hit = box.left < r && box.right > l && box.top < b && box.bottom > t;
+                    const yes = hit || pointer.selectionStart.has(token.id);
+                    token.status = yes ? 'selected' : 'normal';
+                    if (yes && !token.selOrder)
+                        token.selOrder = ++seq;
+                    if (!yes)
+                        token.selOrder = 0;
+                });
+                syncTokenClasses();
+            }
+            function clearTabHover() {
+                if (tabHoverTimer !== null) {
+                    clearTimeout(tabHoverTimer);
+                    tabHoverTimer = null;
+                }
+                hoveredTab?.classList.remove('drag-tab-hover');
+                hoveredTab = null;
+            }
+            function dragMove(e) {
+                if (ghost) {
+                    ghost.style.left = Math.min(innerWidth - 190, e.clientX + 15) + 'px';
+                    ghost.style.top = Math.max(5, e.clientY + 15) + 'px';
+                }
+                const el = document.elementFromPoint(e.clientX, e.clientY);
+                const tab = el?.closest('.tab[data-tab]');
+                if (tab !== hoveredTab) {
+                    clearTabHover();
+                    if (tab && tab.dataset.tab !== 'personal' && tab.dataset.tab !== state.active) {
+                        hoveredTab = tab;
+                        tab.classList.add('drag-tab-hover');
+                        // Brief dwell prevents accidental tab switches while passing over the tab bar.
+                        tabHoverTimer = setTimeout(() => {
+                            tabHoverTimer = null;
+                            if (pointer?.mode !== 'drag' || hoveredTab !== tab)
+                                return;
+                            state.active = tab.dataset.tab;
+                            renderRows();
+                            // Changing pages must not commit the drop or disable any source token.
+                            highlighted?.classList.remove('drop-over');
+                            highlighted = null;
+                            clearTabHover();
+                        }, 280);
+                    }
+                }
+                let target = tab ? null : el?.closest('[data-drop]');
+                if (target?.dataset.drop === 'qty' && target.closest('.number-wrap'))
+                    target = target.closest('.number-wrap');
+                if (highlighted !== target) {
+                    highlighted?.classList.remove('drop-over');
+                    highlighted = target;
+                    highlighted?.classList.add('drop-over');
+                }
+                $('#addRow').classList.toggle('force-show', true);
+            }
+            wrap.addEventListener('pointermove', e => {
+                if (!pointer)
+                    return;
+                const dist = Math.hypot(e.clientX - pointer.startX, e.clientY - pointer.startY);
+                if (pointer.mode === 'ctrl')
+                    return;
+                if (pointer.mode.startsWith('pending') && dist < 5)
+                    return;
+                if (pointer.mode === 'pendingMarquee') {
+                    pointer.mode = 'marquee';
+                }
+                else if (pointer.mode === 'pendingToken') {
+                    pointer.mode = 'drag';
+                    pointer.dragTokens = pointer.token.status === 'selected' ? selected() : [pointer.token];
+                    ghost = document.createElement('div');
+                    ghost.className = 'drag-ghost';
+                    ghost.textContent = pointer.dragTokens.length === 1 ? pointer.dragTokens[0].text : pointer.dragTokens.length + ' 個區塊：' + pointer.dragTokens.slice(0, 2).map(t => t.text).join('、') + (pointer.dragTokens.length > 2 ? '…' : '');
+                    document.body.append(ghost);
+                }
+                if (pointer.mode === 'marquee')
+                    moveRect(e.clientX, e.clientY);
+                else if (pointer.mode === 'drag')
+                    dragMove(e);
+            });
+            function endPointer(e) {
+                if (!pointer)
+                    return;
+                const p = pointer;
+                pointer = null;
+                if (p.mode === 'ctrl') {
+                    if (Math.hypot(e.clientX - p.startX, e.clientY - p.startY) < 8)
+                        toggleToken(p.token, true);
+                }
+                else if (p.mode === 'pendingToken') {
+                    toggleToken(p.token, false);
+                }
+                else if (p.mode === 'marquee') {
+                    selectionBox?.remove();
+                    selectionBox = null;
+                }
+                else if (p.mode === 'drag') {
+                    const endTarget = highlighted;
+                    const releasedOnTab = !!document.elementFromPoint(e.clientX, e.clientY)?.closest('.tab[data-tab]');
+                    clearTabHover();
+                    ghost?.remove();
+                    ghost = null;
+                    highlighted?.classList.remove('drop-over');
+                    highlighted = null;
+                    $('#addRow').classList.remove('force-show');
+                    if (endTarget)
+                        commitDrop(endTarget, p.dragTokens);
+                    else if (!releasedOnTab)
+                        notify('未放在有效欄位，來源物件保持原狀', 'error');
+                }
+                else if (p.mode === 'pendingMarquee') {
+                }
+                try {
+                    if (wrap.hasPointerCapture(e.pointerId))
+                        wrap.releasePointerCapture(e.pointerId);
+                }
+                catch (err) {
+                }
+            }
+            wrap.addEventListener('pointerup', endPointer);
+            wrap.addEventListener('pointercancel', e => {
+                clearTabHover();
+                selectionBox?.remove();
+                selectionBox = null;
+                ghost?.remove();
+                ghost = null;
+                highlighted?.classList.remove('drop-over');
+                highlighted = null;
+                $('#addRow').classList.remove('force-show');
+                pointer = null;
+            });
+            wrap.addEventListener('click', e => {
+                if (e.target.closest('[data-token]'))
+                    e.preventDefault();
+            });
+            wrap.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    const el = e.target.closest('[data-token]');
+                    if (!el)
+                        return;
+                    e.preventDefault();
+                    const t = getTokenById(el.dataset.token);
+                    if (t)
+                        toggleToken(t, e.ctrlKey);
+                }
+            });
+            // Drag-to-resize shared name column.
+            const handle = $('#resizeHandle');
+            handle.addEventListener('pointerdown', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                const before = snapshot(), origin = e.clientX, start = state.width === null ? fittedNameWidth() : state.width;
+                document.body.classList.add('resizing');
+                handle.setPointerCapture(e.pointerId);
+                const move = ev => {
+                    state.width = Math.max(118, Math.min(520, start + ev.clientX - origin));
+                    $('#orderGrid').style.setProperty('--name-width', state.width + 'px');
+                    autoSizeNames();
+                };
+                const done = () => {
+                    handle.removeEventListener('pointermove', move);
+                    handle.removeEventListener('pointerup', done);
+                    handle.removeEventListener('pointercancel', done);
+                    document.body.classList.remove('resizing');
+                    pushHistory(before);
+                };
+                handle.addEventListener('pointermove', move);
+                handle.addEventListener('pointerup', done);
+                handle.addEventListener('pointercancel', done);
+            });
+            $('#undoBtn').onclick = undoOp;
+            $('#redoBtn').onclick = redoOp;
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && ['z', 'y'].includes(e.key.toLowerCase()) && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                    e.preventDefault();
+                    e.key.toLowerCase() === 'z' && !e.shiftKey ? undoOp() : redoOp();
+                }
+            });
+            function summary() {
+                let s = '【便當】\n';
+                for (const c of ['meal', 'drink']) {
+                    if (c === 'drink')
+                        s += '\n【飲料】\n';
+                    const cat = state.categories[c];
+                    for (const r of cat.rows) {
+                        if (!r.name.trim() && !Number(r.qty) && !Number(r.price))
+                            continue;
+                        s += `${r.name || '(未填品項)'} × ${r.qty}｜單價 ${r.price || 0}｜小計 ${money(rowTotal(r))}${r.manual !== null ? '（手動）' : ''}\n`;
+                    }
+                    s += `TEL：${cat.phone || '未填'}\n總計：${money(catTotal(c))} 元\n`;
+                }
+                return s + '\n合計：' + money(catTotal('meal') + catTotal('drink')) + ' 元';
+            }
+            $('#copyBtn').onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(summary());
+                    notify('已複製便當及飲料訂單摘要');
+                }
+                catch (err) {
+                    const a = document.createElement('textarea');
+                    a.value = summary();
+                    document.body.append(a);
+                    a.select();
+                    try {
+                        document.execCommand('copy');
+                        notify('已複製訂單摘要');
+                    }
+                    catch (e) {
+                        notify('複製失敗，請改用匯出備份', 'error');
+                    }
+                    a.remove();
+                }
+            };
+            $('#exportBtn').onclick = () => {
+                const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+                a.href = url;
+                a.download = '午餐訂單備份-' + new Date().toISOString().slice(0, 10) + '.json';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            };
+            $('#importBtn').onclick = () => $('#importFile').click();
+            $('#importFile').onchange = async (e) => {
+                const f = e.target.files[0];
+                if (!f)
+                    return;
+                try {
+                    const d = JSON.parse(await f.text());
+                    if (!d.categories?.meal?.rows || !d.categories?.drink?.rows || !Array.isArray(d.tokens) || !Array.isArray(d.people))
+                        throw Error();
+                    const before = snapshot();
+                    state = d;
+                    state.width = typeof state.width === 'number' ? state.width : null;
+                    if (!Array.isArray(state.personal)) state.personal = buildPersonalRows(state.people);
+                    state.tokens.forEach(t => {
+                        if (t.status === 'selected')
+                            t.status = 'normal';
+                    });
+                    pushHistory(before);
+                    renderAll();
+                    notify('備份已匯入');
+                }
+                catch (err) {
+                    notify('匯入失敗：備份檔案格式不正確', 'error');
+                }
+                e.target.value = '';
+            };
+            window.addEventListener('resize', () => {
+                if (state.width === null)
+                    applyNameWidth();
+            });
+            renderAll();
+            // Do not persist working data across reload, navigation, or browser restart.
+            // The pageshow event also handles values restored by the browser's form cache / BFCache.
+            window.addEventListener('pageshow', () => {
+                state = fresh();
+                undo = [];
+                redo = [];
+                seq = 0;
+                renderAll();
+                $('#rawText').value = '';
+            });
+        })();
+    </script>
 </body>
+
 </html>
