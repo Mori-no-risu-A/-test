@@ -1125,7 +1125,7 @@
                         buf += ch;
                         continue;
                     }
-                    if (depth === 0 && (/[\s+＋=＝,，;；]/u).test(ch)) {
+                    if (depth === 0 && (/[\s+＋=＝,，;；/|｜／]/u).test(ch)) {
                         if (buf.trim())
                             chunks.push(buf.trim());
                         buf = '';
