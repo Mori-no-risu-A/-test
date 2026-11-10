@@ -506,6 +506,54 @@
             color: #718196;
         }
 
+        /* 以編號為唯一拖曳把手，不干擾品項的編輯及左側來源拖曳。 */
+        .order-row .idx {
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            border-radius: 5px;
+            padding: 8px 0;
+        }
+        .order-row .idx:hover { background: #e8f4fc; color: #147dbb; }
+        .order-row .idx:active { cursor: grabbing; }
+        .order-row.row-reordering { opacity: .42; }
+        .row-insertion-line {
+            position: fixed;
+            height: 3px;
+            border-radius: 3px;
+            background: #079ce5;
+            box-shadow: 0 0 0 1px #fff, 0 2px 8px #0785cf55;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .row-insertion-line::before, .row-insertion-line::after {
+            content: '';
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #079ce5;
+            top: -3px;
+        }
+        .row-insertion-line::before { left: -4px; }
+        .row-insertion-line::after { right: -4px; }
+        .row-drag-preview {
+            position: fixed;
+            z-index: 10001;
+            pointer-events: none;
+            padding: 7px 12px;
+            border: 1px solid #1494d2;
+            background: #f4fbff;
+            border-radius: 8px;
+            box-shadow: 0 5px 18px #24486230;
+            max-width: 240px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 13px;
+        }
+
         .field {
             height: 42px;
             min-width: 0;
@@ -1348,7 +1396,7 @@
                     const div = document.createElement('div');
                     div.className = 'columns order-row';
                     div.dataset.row = r.id;
-                    div.innerHTML = `<span class="idx">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
+                    div.innerHTML = `<span class="idx" title="按住並拖曳以調整品項順序" aria-label="拖曳第${i + 1}項排序">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
                     body.append(div);
                 });
                 applyNameWidth();
@@ -1451,6 +1499,85 @@
             function getRow(id) {
                 return state.categories[state.active].rows.find(r => r.id === id);
             }
+            // 訂單排序：編號按住拖曳，未放開前只顯示插入線，放開才更動資料。
+            // 使用 Pointer Events，同時支援滑鼠、觸控與觸控筆。
+            let rowDrag = null;
+            $('#orderRows').addEventListener('pointerdown', e => {
+                const grip = e.target.closest('.order-row .idx');
+                if (!grip || (e.pointerType === 'mouse' && e.button !== 0) || rowDrag) return;
+                const rowElement = grip.closest('.order-row');
+                const rows = state.categories[state.active].rows;
+                const originalIndex = rows.findIndex(r => r.id === rowElement.dataset.row);
+                if (originalIndex < 0) return;
+                e.preventDefault();
+                const marker = document.createElement('div');
+                marker.className = 'row-insertion-line';
+                marker.hidden = true;
+                document.body.append(marker);
+                const preview = document.createElement('div');
+                preview.className = 'row-drag-preview';
+                preview.textContent = (originalIndex + 1) + '. ' + (rows[originalIndex].name || '未命名品項');
+                preview.hidden = true;
+                document.body.append(preview);
+                rowDrag = { id: rowElement.dataset.row, category: state.active, originalIndex,
+                    startX: e.clientX, startY: e.clientY, moved: false, insertion: null,
+                    marker, preview, grip, rowElement, pointerId: e.pointerId };
+                grip.setPointerCapture(e.pointerId);
+            });
+            function updateRowDrag(e) {
+                const d = rowDrag;
+                if (!d || e.pointerId !== d.pointerId) return;
+                if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 5) return;
+                if (!d.moved) { d.moved = true; d.rowElement.classList.add('row-reordering'); }
+                d.preview.hidden = false;
+                d.preview.style.left = (e.clientX + 17) + 'px';
+                d.preview.style.top = (e.clientY + 13) + 'px';
+                const area = $('#orderRows');
+                const bounds = area.getBoundingClientRect();
+                const scroll = area.closest('.order-scroll');
+                const viewport = scroll.getBoundingClientRect();
+                // 長清單接近上下邊緣時可持續捲動。
+                if (viewport.height > 0 && getComputedStyle(scroll).overflowY !== 'hidden') {
+                    if (e.clientY < viewport.top + 30 && e.clientY >= viewport.top - 20) scroll.scrollTop -= 13;
+                    else if (e.clientY > viewport.bottom - 30 && e.clientY <= viewport.bottom + 20) scroll.scrollTop += 13;
+                }
+                const inside = e.clientX >= bounds.left - 18 && e.clientX <= bounds.right + 18 &&
+                    e.clientY >= Math.max(bounds.top - 16, viewport.top - 16) &&
+                    e.clientY <= Math.min(bounds.bottom + 16, viewport.bottom + 16);
+                if (!inside) { d.insertion = null; d.marker.hidden = true; return; }
+                const others = [...area.querySelectorAll('.order-row')].filter(el => el !== d.rowElement);
+                let index = others.findIndex(el => e.clientY < el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2);
+                if (index < 0) index = others.length;
+                d.insertion = index;
+                const reference = index < others.length ? others[index] : others[others.length - 1];
+                const rect = reference ? reference.getBoundingClientRect() : d.rowElement.getBoundingClientRect();
+                const y = index < others.length ? rect.top - 5 : rect.bottom + 5;
+                d.marker.style.left = (bounds.left + 4) + 'px';
+                d.marker.style.width = Math.max(30, bounds.width - 8) + 'px';
+                d.marker.style.top = y + 'px';
+                d.marker.hidden = false;
+            }
+            $('#orderRows').addEventListener('pointermove', updateRowDrag);
+            function endRowDrag(e) {
+                const d = rowDrag;
+                if (!d || e.pointerId !== d.pointerId) return;
+                rowDrag = null;
+                d.marker.remove();
+                d.preview.remove();
+                d.rowElement.classList.remove('row-reordering');
+                if (e.type === 'pointercancel' || !d.moved || d.insertion === null || d.category !== state.active) return;
+                if (d.insertion === d.originalIndex) return;
+                const before = snapshot();
+                const rows = state.categories[d.category].rows;
+                const sourceIndex = rows.findIndex(r => r.id === d.id);
+                if (sourceIndex < 0) return;
+                const [moved] = rows.splice(sourceIndex, 1);
+                rows.splice(d.insertion, 0, moved);
+                pushHistory(before);
+                renderRows();
+            }
+            $('#orderRows').addEventListener('pointerup', endRowDrag);
+            $('#orderRows').addEventListener('pointercancel', endRowDrag);
             const editBefore = new WeakMap();
             // 個人收款狀態與應付金額分開管理；每次切換可使用上方復原／重做。
             $('#personalGroups').addEventListener('click', e => {
