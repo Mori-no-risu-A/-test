@@ -1112,9 +1112,10 @@
                 return { people, tokens };
             }
             function splitMenu(s) {
+                const normalized = s.replace(/\*(\d+(?:\.\d+)?)\*/g, '$1');
                 const chunks = [];
                 let buf = '', depth = 0;
-                for (const ch of s) {
+                for (const ch of normalized) {
                     if (ch === '(' || ch === '（') {
                         depth++;
                         buf += ch;
