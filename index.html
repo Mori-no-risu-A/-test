@@ -972,6 +972,25 @@
 
         }
 
+        /* 新增品項：以幾何線條繪製加號，避免字型基線造成視覺偏移。 */
+        .add-drop .plus {
+            position: relative;
+            font-size: 0;
+            line-height: 0;
+        }
+        .add-drop .plus::before,
+        .add-drop .plus::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            background: currentColor;
+            border-radius: 1px;
+            transform: translate(-50%, -50%);
+        }
+        .add-drop .plus::before { width: 48%; height: 1.5px; }
+        .add-drop .plus::after { width: 1.5px; height: 48%; }
+
         /* 欄位標題固定在訂單清單的捲動區頂端（雙欄、單欄皆適用）。 */
         .order-column-header {
             position: sticky;
@@ -1569,7 +1588,7 @@
                     const div = document.createElement('div');
                     div.className = 'columns order-row';
                     div.dataset.row = r.id;
-                    div.innerHTML = `<span class="idx" title="按住並拖曳以調整品項順序" aria-label="拖曳第${i + 1}項排序">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-drop="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
+                    div.innerHTML = `<span class="idx" title="按住並拖曳以調整品項順序" aria-label="拖曳第${i + 1}項排序">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
                     body.append(div);
                 });
                 applyNameWidth();
@@ -1989,14 +2008,6 @@
             function decideDrop(kind, row, tokens) {
                 if (!tokens.length)
                     return { error: '請先選取左側項目' };
-                if (kind === 'subtotal') {
-                    if (tokens.length !== 1 || !pureNumber(tokens[0].text))
-                        return { error: '小計欄位只能填入單一純數字來源' };
-                    const value = Number(tokens[0].text);
-                    if (rowTotal(row) === value && row.manual !== null)
-                        return { error: '小計沒有變化，未處理來源物件' };
-                    return { row: { ...row, manual: value } };
-                }
                 const info = interpret(tokens);
                 if (kind === 'price') {
                     if (tokens.length !== 1)
@@ -2036,7 +2047,7 @@
             }
             function commitDrop(target, tokens) {
                 let kind = target.dataset.drop;
-                if (!kind)
+                if (!kind || kind === 'subtotal')
                     return false;
                 const before = snapshot();
                 let newItem = false, row;
@@ -2187,6 +2198,7 @@
                     }
                 }
                 let target = tab ? null : el?.closest('[data-drop]');
+                if (el?.closest('[data-field="subtotal"]')) target = null;
                 if (target?.dataset.drop === 'qty' && target.closest('.number-wrap'))
                     target = target.closest('.number-wrap');
                 if (highlighted !== target) {
@@ -2247,7 +2259,7 @@
                     $('#addRow').classList.remove('force-show');
                     if (endTarget)
                         commitDrop(endTarget, p.dragTokens);
-                    else if (!releasedOnTab)
+                    else if (!releasedOnTab && !document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-field="subtotal"]'))
                         notify('未放在有效欄位，來源物件保持原狀', 'error');
                 }
                 else if (p.mode === 'pendingMarquee') {
@@ -2286,37 +2298,48 @@
                         toggleToken(t, e.ctrlKey);
                 }
             });
-            // 單欄模式：選好來源，再點品項、價格、數量、小計或新增空白項即可放置。
+            // 單欄模式：選好來源，再點品項、價格、數量或新增空白項即可放置。
             // 沒有選取來源時，各欄維持原本的輸入或新增行為。
             const isSingleColumn = () => matchMedia('(max-width: 1080px)').matches;
             function updateMobileFillHints() {
                 const ready = isSingleColumn() && selected().length > 0;
-                document.querySelectorAll('#orderRows [data-drop="name"], #orderRows [data-drop="price"], #orderRows [data-drop="qty"], #orderRows [data-drop="subtotal"], #addRow').forEach(el => {
+                document.querySelectorAll('#orderRows [data-drop="name"], #orderRows [data-drop="price"], #orderRows [data-drop="qty"], #addRow').forEach(el => {
                     el.classList.toggle('mobile-fill-ready', ready);
                     if (ready) el.title = '點一下將已選來源填入此位置';
-                    else if (el.dataset.drop !== 'subtotal') el.removeAttribute('title');
-                    else el.title = '可手動輸入，右鍵恢復自動';
+                    else el.removeAttribute('title');
                 });
             }
             function mobileFillTarget(e) {
                 if (!isSingleColumn() || !selected().length) return null;
                 if (e.target.closest('[data-spin], [data-remove]')) return null;
                 const target = e.target.closest('[data-drop]');
-                if (!target || !['name', 'price', 'qty', 'subtotal', 'add'].includes(target.dataset.drop)) return null;
+                if (!target || !['name', 'price', 'qty', 'add'].includes(target.dataset.drop)) return null;
                 return target.dataset.drop === 'qty' ? (target.closest('.number-wrap') || target) : target;
+            }
+            // 小計不是來源填值目標；手機有選取來源時，觸碰小計完全無作用。
+            function selectedMobileSubtotal(e) {
+                return isSingleColumn() && selected().length > 0 && !!e.target.closest('#orderRows [data-field="subtotal"]');
             }
             // 先阻止獲取輸入焦點，以免手機鍵盤彈出。
             document.querySelector('.right-body').addEventListener('pointerdown', e => {
-                if (mobileFillTarget(e)) e.preventDefault();
+                if (selectedMobileSubtotal(e) || mobileFillTarget(e)) e.preventDefault();
             }, true);
             // 採捕獲階段處理，避免新增行既填入來源又被原本 onclick 新增第二行。
             document.querySelector('.right-body').addEventListener('click', e => {
+                if (selectedMobileSubtotal(e)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
                 const target = mobileFillTarget(e);
                 if (!target) return;
                 e.preventDefault();
                 e.stopPropagation();
                 const tokens = selected();
                 if (commitDrop(target, tokens)) notify('已填入 ' + tokens.length + ' 個來源項目');
+            }, true);
+            document.querySelector('.right-body').addEventListener('focusin', e => {
+                if (selectedMobileSubtotal(e)) e.target.blur();
             }, true);
             const fillObserver = new MutationObserver(updateMobileFillHints);
             fillObserver.observe($('#orderRows'), { childList: true });
