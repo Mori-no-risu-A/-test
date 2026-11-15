@@ -513,46 +513,12 @@
             transition: transform 450ms cubic-bezier(.15,.85,.25,1);
             will-change: transform;
         }
-        /* 拖曳中的原始列不顯示殘影，但保留原本的排版空間。 */
+        /* 原品項直接沿用排序動畫移動；拖曳期間稍微淡化，放開恢復。 */
         .order-row.sort-source {
-            visibility: hidden;
-        }
-        .row-sort-placeholder {
-            position: absolute;
-            z-index: 3;
+            position: relative;
+            z-index: 4;
+            opacity: .52;
             pointer-events: none;
-            border: 2px dashed #1689cc;
-            border-radius: 7px;
-            background: rgba(22,137,204,.12);
-            box-shadow: inset 0 0 0 1px #ffffff80;
-            /* 提示框先固定在來源列，再用 transform 動畫移到目標列。 */
-            transition: transform 450ms cubic-bezier(.15,.85,.25,1);
-            will-change: transform;
-        }
-        .row-sort-placeholder::after {
-            content: '放開後移動至此';
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: #247eb1;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .row-drag-preview {
-            position: fixed;
-            z-index: 10001;
-            pointer-events: none;
-            padding: 7px 12px;
-            border: 1px solid #1494d2;
-            background: #f4fbff;
-            border-radius: 8px;
-            box-shadow: 0 5px 18px #24486230;
-            max-width: 240px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            font-size: 13px;
         }
 
         .field {
@@ -1755,7 +1721,7 @@
                     if (i !== d.originalIndex)
                         row.style.transform = `translate3d(0, ${sortTargetFor(d, i)}px, 0)`;
                 });
-                d.placeholder.style.transform = `translate3d(0, ${sortDestinationTop(d) - d.sourceTop}px, 0)`;
+                d.rowElement.style.transform = `translate3d(0, ${sortDestinationTop(d) - d.sourceTop}px, 0)`;
             }
             orderArea.addEventListener('pointerdown', e => {
                 const grip = e.target.closest('.order-row .idx');
@@ -1767,11 +1733,6 @@
                 e.preventDefault();
                 const rows = sortRows();
                 const bounds = orderArea.getBoundingClientRect();
-                const preview = document.createElement('div');
-                preview.className = 'row-drag-preview';
-                preview.textContent = (originalIndex + 1) + '. ' + (dataRows[originalIndex].name || '未命名品項');
-                preview.hidden = true;
-                document.body.append(preview);
                 const thresholds = rows.map((el, i) => {
                     const top = sortLocalTop(el);
                     const height = el.offsetHeight;
@@ -1788,16 +1749,14 @@
                 rowDrag = {id: rowElement.dataset.row, category: state.active, originalIndex,
                     startX: e.clientX, startY: e.clientY, startLocalY: e.clientY - bounds.top,
                     pointerY: e.clientY - bounds.top, moved: false, insertion: originalIndex,
-                    placeholder: null, preview, rowElement, pointerId: e.pointerId,
+                    rowElement, pointerId: e.pointerId,
                     rows, thresholds, rowTops, blockHeights, sourceTop: sortLocalTop(rowElement),
                     sourceBlockHeight: blockHeights[originalIndex],
                     inside: true};
                 // 初始 transform 必須在開始拖曳的下一個 pointermove 前建立。
-                rows.forEach((el, i) => {
-                    if (i !== originalIndex) {
-                        el.style.transform = 'translate3d(0, 0px, 0)';
-                        el.classList.add('sort-shifting');
-                    }
+                rows.forEach(el => {
+                    el.style.transform = 'translate3d(0, 0px, 0)';
+                    el.classList.add('sort-shifting');
                 });
                 // 強制瀏覽器確認初始樣式，避免第一次位移沒有 transition。
                 if (rows.length) void rows[0].offsetHeight;
@@ -1809,23 +1768,8 @@
                 if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 5) return;
                 if (!d.moved) {
                     d.moved = true;
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'row-sort-placeholder';
-                    placeholder.style.height = d.rowElement.offsetHeight + 'px';
-                    placeholder.style.left = '0px';
-                    placeholder.style.right = '0px';
-                    // 先設定正確的 top 才插入 DOM，徹底排除從底部跳入的 bug。
-                    placeholder.style.top = d.sourceTop + 'px';
-                    orderArea.append(placeholder);
-                    d.placeholder = placeholder;
-                    placeholder.style.transform = 'translate3d(0, 0px, 0)';
                     d.rowElement.classList.add('sort-source');
-                    // 提示框首次出現就位於來源列，不從清單底部飛入。
-                    void placeholder.offsetHeight;
                 }
-                d.preview.hidden = false;
-                d.preview.style.left = (e.clientX + 17) + 'px';
-                d.preview.style.top = (e.clientY + 13) + 'px';
                 const scroll = orderArea.closest('.order-scroll');
                 const viewport = scroll.getBoundingClientRect();
                 if (viewport.height > 0 && getComputedStyle(scroll).overflowY !== 'hidden') {
@@ -1837,7 +1781,7 @@
                 d.inside = e.clientX >= bounds.left - 18 && e.clientX <= bounds.right + 18 &&
                     e.clientY >= Math.max(bounds.top - 16, viewport.top - 16) &&
                     e.clientY <= Math.min(bounds.bottom + 16, viewport.bottom + 16);
-                d.placeholder.style.opacity = d.inside ? '1' : '.35';
+                d.rowElement.style.opacity = d.inside ? '.52' : '.30';
                 // 單行採中心線；多行採靠近來源一側的固定 30px 判定線。
                 let insertion = 0;
                 d.thresholds.forEach((threshold, i) => {
@@ -1854,12 +1798,56 @@
                 const d = rowDrag;
                 if (!d || e.pointerId !== d.pointerId) return;
                 rowDrag = null;
-                d.preview.remove();
-                d.placeholder?.remove();
+                const cancelled = e.type === 'pointercancel' || !d.inside || d.category !== state.active;
+                if (cancelled && d.moved) {
+                    // 取消排序時從「放開當下的滑鼠 Y 座標」快速滑回原列，
+                    // 而不是先清除 transform 造成瞬移。保留起始抓取點的相對位置。
+                    const bounds = orderArea.getBoundingClientRect();
+                    const releaseLocalY = e.clientY - bounds.top;
+                    const releaseOffsetY = releaseLocalY - d.startLocalY;
+                    const source = d.rowElement;
+                    // 先取消原本較慢的 450ms 排序過渡，改用較短的回彈。
+                    d.rows.forEach(el => {
+                        el.classList.remove('sort-shifting');
+                        el.style.transition = 'transform 210ms cubic-bezier(.22,1,.36,1), opacity 210ms ease-out';
+                    });
+                    // 直接將被拖曳的實體列定位在放開時的 Y 軸位置，
+                    // 強制確認該起點後才啟動返回動畫，避免同一影格內被合併成瞬移。
+                    source.style.transition = 'none';
+                    source.style.transform = `translate3d(0, ${releaseOffsetY}px, 0)`;
+                    source.style.opacity = d.inside ? '.52' : '.30';
+                    void source.offsetHeight;
+                    source.style.transition = 'transform 230ms cubic-bezier(.22,1,.36,1), opacity 230ms ease-out';
+                    source.style.transform = 'translate3d(0, 0px, 0)';
+                    source.style.opacity = '1';
+                    // 其他讓位的列也同步以短動畫回到各自的原始位置。
+                    d.rows.forEach(el => {
+                        if (el !== source) el.style.transform = 'translate3d(0, 0px, 0)';
+                    });
+                    const cleanup = () => d.rows.forEach(el => {
+                        el.classList.remove('sort-shifting', 'sort-source');
+                        el.style.transition = '';
+                        el.style.transform = '';
+                        el.style.opacity = '';
+                    });
+                    let finished = false;
+                    const finish = () => {
+                        if (finished) return;
+                        finished = true;
+                        source.removeEventListener('transitionend', onReturnEnd);
+                        cleanup();
+                    };
+                    const onReturnEnd = event => {
+                        if (event.target === source && event.propertyName === 'transform') finish();
+                    };
+                    source.addEventListener('transitionend', onReturnEnd);
+                    setTimeout(finish, 320); // 未觸發 transitionend 的瀏覽器亦能復原
+                    return;
+                }
                 d.rows.forEach(el => {
-                    // 先移除 transition，再清除 transform，以免取消拖曳時意外播放動畫。
                     el.classList.remove('sort-shifting', 'sort-source');
                     el.style.transform = '';
+                    el.style.opacity = '';
                 });
                 if (e.type === 'pointercancel' || !d.moved || !d.inside || d.category !== state.active ||
                     d.insertion === d.originalIndex) return;
