@@ -507,29 +507,36 @@
         }
         .order-row .idx:hover { background: #e8f4fc; color: #147dbb; }
         .order-row .idx:active { cursor: grabbing; }
-        /* 拖曳時以等高佔位列預覽插入位置，其他列平滑讓位。 */
+        /* 排序時 DOM 順序不變，跨過判定線後才讓其他列以 CSS 平滑移動。 */
+        #orderRows { position: relative; }
+        .order-row.sort-shifting {
+            transition: transform 400ms cubic-bezier(.15,.85,.25,1);
+            will-change: transform;
+        }
+        .order-row.sort-source {
+            opacity: .18;
+        }
         .row-sort-placeholder {
-            min-height: 31px;
-            margin-bottom: 4px;
-            border: 1.5px dashed #1689cc;
-            border-radius: 7px;
-            background: #e6f4ff;
-            box-shadow: inset 0 0 0 1px #ffffff9c;
+            position: absolute;
+            z-index: 3;
             pointer-events: none;
-            position: relative;
+            border: 2px dashed #1689cc;
+            border-radius: 7px;
+            background: rgba(22,137,204,.12);
+            box-shadow: inset 0 0 0 1px #ffffff80;
+            /* 提示框先固定在來源列，再用 transform 動畫移到目標列。 */
+            transition: transform 400ms cubic-bezier(.15,.85,.25,1);
+            will-change: transform;
         }
         .row-sort-placeholder::after {
             content: '放開後移動至此';
             position: absolute;
-            left: 50%; top: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             color: #247eb1;
             font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .row-sort-placeholder { transition: none; }
         }
         .row-drag-preview {
             position: fixed;
@@ -1679,84 +1686,127 @@
             function getRow(id) {
                 return state.categories[state.active].rows.find(r => r.id === id);
             }
-            // 訂單排序：實體佔位列 + FLIP 動畫，放開後才修改 state。
-            // Pointer capture 放在穩定的父容器，避免移開原列後觸控事件中斷。
+            // 保留原來的「跨過中心線才換位」判定；動畫改交給 CSS transition。
+            // 重要：在 pointerdown 就完成初始 transform 與 transition 的設定，
+            // 並讀取 layout，避免加入動畫類別、設定新位移發生在同一渲染批次而瞬移。
             let rowDrag = null;
             const orderArea = $('#orderRows');
+            const sortRows = () => [...orderArea.querySelectorAll('.order-row')];
+            const clampSort = (n, min, max) => Math.max(min, Math.min(max, n));
+            const sortLocalTop = el => el.offsetTop;
+            // 不同訂單列可能因多行品項而有不同高度。位移使用來源列的實際高度
+            // （含列間距），佔位框的位置則由經過的每列實際高度累加決定。
+            function sortBlockHeight(el) {
+                const style = getComputedStyle(el);
+                return el.offsetHeight + (parseFloat(style.marginBottom) || 0);
+            }
+            function sortTargetFor(d, i) {
+                if (i === d.originalIndex) return 0;
+                if (d.insertion < d.originalIndex && i >= d.insertion && i < d.originalIndex)
+                    return d.sourceBlockHeight;
+                if (d.insertion > d.originalIndex && i > d.originalIndex && i <= d.insertion)
+                    return -d.sourceBlockHeight;
+                return 0;
+            }
+            function sortDestinationTop(d) {
+                if (d.insertion === d.originalIndex) return d.sourceTop;
+                if (d.insertion < d.originalIndex)
+                    return d.rowTops[d.insertion];
+                // 往下移：經過的列會往上挪出來源列所佔的空間，
+                // 新插入位置必須累加經過的列高，而不能只取某一列的 top。
+                let top = d.sourceTop;
+                for (let i = d.originalIndex + 1; i <= d.insertion; i++)
+                    top += d.blockHeights[i];
+                return top;
+            }
+            function paintSortTargets(d) {
+                d.rows.forEach((row, i) => {
+                    if (i !== d.originalIndex)
+                        row.style.transform = `translate3d(0, ${sortTargetFor(d, i)}px, 0)`;
+                });
+                d.placeholder.style.transform = `translate3d(0, ${sortDestinationTop(d) - d.sourceTop}px, 0)`;
+            }
             orderArea.addEventListener('pointerdown', e => {
                 const grip = e.target.closest('.order-row .idx');
                 if (!grip || (e.pointerType === 'mouse' && e.button !== 0) || rowDrag) return;
                 const rowElement = grip.closest('.order-row');
-                const rows = state.categories[state.active].rows;
-                const originalIndex = rows.findIndex(r => r.id === rowElement.dataset.row);
+                const dataRows = state.categories[state.active].rows;
+                const originalIndex = dataRows.findIndex(r => r.id === rowElement.dataset.row);
                 if (originalIndex < 0) return;
                 e.preventDefault();
+                const rows = sortRows();
+                const bounds = orderArea.getBoundingClientRect();
                 const preview = document.createElement('div');
                 preview.className = 'row-drag-preview';
-                preview.textContent = (originalIndex + 1) + '. ' + (rows[originalIndex].name || '未命名品項');
+                preview.textContent = (originalIndex + 1) + '. ' + (dataRows[originalIndex].name || '未命名品項');
                 preview.hidden = true;
                 document.body.append(preview);
-                rowDrag = { id: rowElement.dataset.row, category: state.active, originalIndex,
-                    startX: e.clientX, startY: e.clientY, moved: false, insertion: originalIndex,
-                    placeholder: null, preview, rowElement, pointerId: e.pointerId };
+                const centers = rows.map(el => sortLocalTop(el) + el.offsetHeight / 2);
+                const blockHeights = rows.map(sortBlockHeight);
+                const rowTops = rows.map(sortLocalTop);
+                rowDrag = {id: rowElement.dataset.row, category: state.active, originalIndex,
+                    startX: e.clientX, startY: e.clientY, startLocalY: e.clientY - bounds.top,
+                    pointerY: e.clientY - bounds.top, moved: false, insertion: originalIndex,
+                    placeholder: null, preview, rowElement, pointerId: e.pointerId,
+                    rows, centers, rowTops, blockHeights, sourceTop: sortLocalTop(rowElement),
+                    sourceBlockHeight: blockHeights[originalIndex],
+                    inside: true};
+                // 初始 transform 必須在開始拖曳的下一個 pointermove 前建立。
+                rows.forEach((el, i) => {
+                    if (i !== originalIndex) {
+                        el.style.transform = 'translate3d(0, 0px, 0)';
+                        el.classList.add('sort-shifting');
+                    }
+                });
+                // 強制瀏覽器確認初始樣式，避免第一次位移沒有 transition。
+                if (rows.length) void rows[0].offsetHeight;
                 orderArea.setPointerCapture(e.pointerId);
             });
-            function placeRowPlaceholder(d, nextIndex) {
-                const others = [...orderArea.querySelectorAll('.order-row')];
-                nextIndex = Math.min(Math.max(nextIndex, 0), others.length);
-                if (nextIndex === d.insertion) return;
-                // 先量測舊位置，改變 DOM 佔位後將其他列從舊位置動畫移到新位置。
-                const oldTops = new Map(others.map(el => [el, el.getBoundingClientRect().top]));
-                const reference = others[nextIndex] || null;
-                orderArea.insertBefore(d.placeholder, reference);
-                d.insertion = nextIndex;
-                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-                for (const el of others) {
-                    const delta = oldTops.get(el) - el.getBoundingClientRect().top;
-                    if (Math.abs(delta) > 0.5) {
-                        el.getAnimations().forEach(anim => anim.cancel());
-                        el.animate([{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
-                            { duration: 160, easing: 'cubic-bezier(.2,.7,.2,1)' });
-                    }
-                }
-            }
             function updateRowDrag(e) {
                 const d = rowDrag;
                 if (!d || e.pointerId !== d.pointerId) return;
                 if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 5) return;
                 if (!d.moved) {
                     d.moved = true;
-                    const rect = d.rowElement.getBoundingClientRect();
                     const placeholder = document.createElement('div');
                     placeholder.className = 'row-sort-placeholder';
-                    placeholder.style.height = rect.height + 'px';
-                    d.rowElement.replaceWith(placeholder);
+                    placeholder.style.height = d.rowElement.offsetHeight + 'px';
+                    placeholder.style.left = '0px';
+                    placeholder.style.right = '0px';
+                    // 先設定正確的 top 才插入 DOM，徹底排除從底部跳入的 bug。
+                    placeholder.style.top = d.sourceTop + 'px';
+                    orderArea.append(placeholder);
                     d.placeholder = placeholder;
+                    placeholder.style.transform = 'translate3d(0, 0px, 0)';
+                    d.rowElement.classList.add('sort-source');
+                    // 提示框首次出現就位於來源列，不從清單底部飛入。
+                    void placeholder.offsetHeight;
                 }
                 d.preview.hidden = false;
                 d.preview.style.left = (e.clientX + 17) + 'px';
                 d.preview.style.top = (e.clientY + 13) + 'px';
-                const bounds = orderArea.getBoundingClientRect();
                 const scroll = orderArea.closest('.order-scroll');
                 const viewport = scroll.getBoundingClientRect();
-                // 長清單靠近上下邊緣時可持續捲動；不更動水平捲動位置。
                 if (viewport.height > 0 && getComputedStyle(scroll).overflowY !== 'hidden') {
                     if (e.clientY < viewport.top + 30 && e.clientY >= viewport.top - 20) scroll.scrollTop -= 13;
                     else if (e.clientY > viewport.bottom - 30 && e.clientY <= viewport.bottom + 20) scroll.scrollTop += 13;
                 }
-                const inside = e.clientX >= bounds.left - 18 && e.clientX <= bounds.right + 18 &&
+                const bounds = orderArea.getBoundingClientRect();
+                d.pointerY = e.clientY - bounds.top;
+                d.inside = e.clientX >= bounds.left - 18 && e.clientX <= bounds.right + 18 &&
                     e.clientY >= Math.max(bounds.top - 16, viewport.top - 16) &&
                     e.clientY <= Math.min(bounds.bottom + 16, viewport.bottom + 16);
-                if (!inside) {
-                    d.insertion = null;
-                    d.placeholder.style.opacity = '.45';
-                    return;
+                d.placeholder.style.opacity = d.inside ? '1' : '.35';
+                // 只有跨過其他列的中心判定線，才更新插入目標。動畫由下一影格平滑讓位。
+                let insertion = 0;
+                d.centers.forEach((center, i) => {
+                    if (i !== d.originalIndex && d.pointerY > center) insertion++;
+                });
+                const nextInsertion = clampSort(insertion, 0, d.rows.length - 1);
+                if (nextInsertion !== d.insertion) {
+                    d.insertion = nextInsertion;
+                    paintSortTargets(d);
                 }
-                d.placeholder.style.opacity = '1';
-                const others = [...orderArea.querySelectorAll('.order-row')];
-                let index = others.findIndex(el => e.clientY < el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2);
-                if (index < 0) index = others.length;
-                placeRowPlaceholder(d, index);
             }
             orderArea.addEventListener('pointermove', updateRowDrag);
             function endRowDrag(e) {
@@ -1764,19 +1814,20 @@
                 if (!d || e.pointerId !== d.pointerId) return;
                 rowDrag = null;
                 d.preview.remove();
-                if (d.placeholder) d.placeholder.replaceWith(d.rowElement);
-                if (e.type === 'pointercancel' || !d.moved || d.insertion === null || d.category !== state.active ||
-                    d.insertion === d.originalIndex) {
-                    // 取消時將 DOM 與原始資料同步，避免畫面順序留在預覽狀態。
-                    if (d.moved) renderRows();
-                    return;
-                }
+                d.placeholder?.remove();
+                d.rows.forEach(el => {
+                    // 先移除 transition，再清除 transform，以免取消拖曳時意外播放動畫。
+                    el.classList.remove('sort-shifting', 'sort-source');
+                    el.style.transform = '';
+                });
+                if (e.type === 'pointercancel' || !d.moved || !d.inside || d.category !== state.active ||
+                    d.insertion === d.originalIndex) return;
                 const before = snapshot();
-                const rows = state.categories[d.category].rows;
-                const sourceIndex = rows.findIndex(r => r.id === d.id);
-                if (sourceIndex < 0) { renderRows(); return; }
-                const [moved] = rows.splice(sourceIndex, 1);
-                rows.splice(d.insertion, 0, moved);
+                const dataRows = state.categories[d.category].rows;
+                const sourceIndex = dataRows.findIndex(r => r.id === d.id);
+                if (sourceIndex < 0) return;
+                const [moved] = dataRows.splice(sourceIndex, 1);
+                dataRows.splice(d.insertion, 0, moved);
                 pushHistory(before);
                 renderRows();
             }
