@@ -1024,6 +1024,35 @@
         }
         .order-grid .add-drop { box-sizing: border-box; }
 
+        /* 響應式清單：單欄時取消內部高度限制，交由整頁垂直捲動。
+           避免手機必須在狹小清單內二次滑動；訂單過寬時仍可水平滑動。 */
+        @media (max-width: 1080px) {
+            .tokens-wrap,
+            .order-scroll,
+            .personal-scroll {
+                height: auto;
+                max-height: none;
+                min-height: 0;
+                overscroll-behavior: auto;
+            }
+
+            .tokens-wrap,
+            .personal-scroll {
+                overflow: visible;
+            }
+
+            .order-scroll {
+                overflow-x: auto;
+                overflow-y: auto; /* 高度不受限，因此不會形成內部垂直捲軸 */
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* 當前分頁的數量與金額：在窄螢幕時可換行，不擠壓電話欄。 */
+        .category-stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .category-stat { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font-weight: 650; color: #56687e; }
+        .category-stat strong { font-variant-numeric: tabular-nums; color: #167bb6; }
+        .category-stat .money { font-size: 18px; }
     </style>
 </head>
 
@@ -1173,11 +1202,9 @@
                             TEL:
                             <input autocomplete="off" class="field" id="phone" placeholder="店家電話" type="tel" />
                         </label>
-                        <div class="field-pair">
-                            本頁總計：
-                            <span class="money" id="categoryTotal">
-                                $0
-                            </span>
+                        <div class="category-stats" aria-label="目前分頁統計">
+                            <span class="category-stat">數量：<strong id="categoryQty">0</strong></span>
+                            <span class="category-stat">金額：<strong class="money" id="categoryTotal">$0</strong></span>
                         </div>
                     </div>
                     <div class="grand">
@@ -1526,6 +1553,8 @@
             }
             function refreshTotals() {
                 const cat = catTotal(state.active);
+                const qty = state.categories[state.active].rows.reduce((sum, r) => sum + (Number(r.qty) || 0), 0);
+                $('#categoryQty').textContent = money(qty);
                 $('#categoryTotal').textContent = '$' + money(cat);
                 $('#grandTotal').textContent = '$' + money(catTotal('meal') + catTotal('drink'));
                 $$('[data-subtotal]').forEach(input => {
