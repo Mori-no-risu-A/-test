@@ -456,16 +456,6 @@
             gap: 4px;
         }
 
-        .resize-handle {
-            display: inline-block;
-            width: 7px;
-            height: 17px;
-            cursor: col-resize;
-            border-left: 2px solid #b6c3d2;
-            border-right: 2px solid #b6c3d2;
-            margin-left: 3px;
-        }
-
         .order-scroll {
             height: min(67vh, 690px);
             min-height: 450px;
@@ -517,27 +507,30 @@
         }
         .order-row .idx:hover { background: #e8f4fc; color: #147dbb; }
         .order-row .idx:active { cursor: grabbing; }
-        .order-row.row-reordering { opacity: .42; }
-        .row-insertion-line {
-            position: fixed;
-            height: 3px;
-            border-radius: 3px;
-            background: #079ce5;
-            box-shadow: 0 0 0 1px #fff, 0 2px 8px #0785cf55;
-            z-index: 10000;
+        /* 拖曳時以等高佔位列預覽插入位置，其他列平滑讓位。 */
+        .row-sort-placeholder {
+            min-height: 31px;
+            margin-bottom: 4px;
+            border: 1.5px dashed #1689cc;
+            border-radius: 7px;
+            background: #e6f4ff;
+            box-shadow: inset 0 0 0 1px #ffffff9c;
             pointer-events: none;
+            position: relative;
         }
-        .row-insertion-line::before, .row-insertion-line::after {
-            content: '';
+        .row-sort-placeholder::after {
+            content: '放開後移動至此';
             position: absolute;
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #079ce5;
-            top: -3px;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            color: #247eb1;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
         }
-        .row-insertion-line::before { left: -4px; }
-        .row-insertion-line::after { right: -4px; }
+        @media (prefers-reduced-motion: reduce) {
+            .row-sort-placeholder { transition: none; }
+        }
         .row-drag-preview {
             position: fixed;
             z-index: 10001;
@@ -801,11 +794,6 @@
             flex-wrap: wrap;
         }
 
-        .resizing * {
-            cursor: col-resize !important;
-            user-select: none !important;
-        }
-
         @media (max-width: 1080px) {
             .main {
                 grid-template-columns: minmax(0, 1fr);
@@ -824,7 +812,7 @@
                 height: auto;
                 min-height: 0;
 
-                /* 仍允許手動拉寬品項後水平捲動 */
+                /* 畫面較窄時仍允許水平捲動 */
                 overflow-x: auto;
                 overflow-y: hidden;
 
@@ -880,6 +868,154 @@
                 overscroll-behavior: auto;
             }
         }
+
+        /* 緊湊型介面：大量訂單維持獨立捲動，不使整頁不斷增高。 */
+        .topbar { padding: 9px 17px; gap: 9px; }
+        .brand { font-size: 17px; }
+        .brandmark { padding: 5px 8px; }
+        .actions { gap: 5px; }
+        .btn { padding: 6px 10px; border-radius: 7px; font-size: 13px; }
+        .main { gap: 11px; margin: 11px auto; padding: 0 12px; }
+        .panel-header { padding: 9px 12px; }
+        .panel-header h2 { font-size: 15px; }
+        .left-body, .right-body { padding: 10px; }
+        .raw-input { height: 200px; padding: 9px; line-height: 1.55; }
+        .raw-actions { margin-top: 6px; }
+        .source-toolbar { margin-bottom: 7px; }
+        .small-btn { padding: 4px 7px; }
+        .tabs { gap: 5px; padding: 8px 10px 0; }
+        .tab { padding: 6px 14px; font-size: 13px; }
+        .tokens-wrap, .order-scroll, .personal-scroll { height: min(65vh, 620px); min-height: 230px; }
+        .person { padding: 6px 9px; min-height: 34px; line-height: 1.25; }
+        .person-head { font-size: 13px; margin-right: 5px; }
+        .token-list { line-height: 2.1; }
+        .token { font-size: 13px; padding: 2px 6px; margin: 2px 3px 2px 0; line-height: 1.4; }
+        .columns { gap: 5px; grid-template-columns: 24px minmax(118px, var(--name-width, 220px)) 92px 85px 95px 32px; }
+        .col-head { font-size: 12px; padding-bottom: 5px; }
+        .order-row { margin-bottom: 4px; min-height: 31px; }
+        .field { height: 31px; padding: 4px 6px; border-radius: 5px; font-size: 13px; }
+        .field-name { min-height: 31px; line-height: 1.3; }
+        .order-row .idx { padding: 4px 0; font-size: 12px; }
+        .number-wrap .field { padding-right: 22px; }
+        .spin { width: 20px; height: 14px; font-size: 10px; }
+        .delete-btn { width: 27px; height: 30px; font-size: 21px; }
+        .add-drop { min-height: 33px; margin: 4px 6px; }
+        .add-drop .plus { width: 25px; height: 25px; font-size: 19px; }
+        .order-footer { margin-top: 7px; padding: 9px 4px 2px; gap: 8px; }
+        .grand { margin: 9px 0 5px; padding: 10px 12px; border-radius: 8px; }
+        .grand .money { font-size: 21px; }
+        .personal-group { margin-bottom: 9px; }
+        .personal-group-title { padding: 7px 10px; }
+        .personal-entry { padding: 4px 9px; gap: 7px; grid-template-columns: 54px minmax(90px, 1fr) 100px; }
+        .payment-toggle { padding: 5px 3px; }
+        .personal-summary { padding: 8px 10px; }
+        .help { margin-top: 8px; line-height: 1.5; }
+        .hintbar { margin-top: 7px; line-height: 1.5; }
+        .source-footer { margin-top: 7px; }
+        .paste-overlay[hidden] { display: none !important; }
+        .paste-overlay { position: fixed; z-index: 20000; inset: 0; background: #182a3e88; display: flex; align-items: center; justify-content: center; padding: 18px; }
+        .paste-dialog { width: min(620px, 100%); background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 18px 55px #10203055; }
+        .paste-dialog h2 { margin: 0 0 7px; font-size: 18px; }
+        .paste-dialog p { color: #64748b; font-size: 13px; line-height: 1.6; }
+        .paste-dialog textarea { width: 100%; height: 240px; border: 1px solid #cad6e2; border-radius: 8px; padding: 10px; font-size: 12px; resize: vertical; }
+        .paste-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+        @media (max-width: 1080px) {
+            .tokens-wrap, .order-scroll, .personal-scroll { height: min(55vh, 500px); min-height: 230px; overflow: auto; overscroll-behavior: contain; }
+            .order-scroll { overflow-x: auto; overflow-y: auto; }
+        }
+        @media (max-width: 580px) {
+            .main { margin: 7px auto; padding: 0 7px; }
+            .left-body, .right-body { padding: 7px; }
+            .panel-header { padding: 7px 9px; }
+            .topbar { padding: 8px; }
+        }
+
+        /* 單欄版：文字與訂單以分頁切換，桌面雙欄維持原狀。 */
+        .mobile-view-tabs { display: none; }
+        @media (max-width: 1080px) {
+            .mobile-view-tabs {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 5px;
+                padding: 5px;
+                background: #e9eff5;
+                border: 1px solid #dce5ee;
+                border-radius: 10px;
+            }
+            .mobile-view-tab {
+                border: 1px solid transparent;
+                border-radius: 7px;
+                padding: 10px 8px;
+                background: transparent;
+                color: #53677d;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .mobile-view-tab.active {
+                background: #fff;
+                color: #137dbb;
+                border-color: #c9dce9;
+                box-shadow: 0 1px 4px #20364c18;
+            }
+            .main[data-mobile-view="source"] > .order-panel,
+            .main[data-mobile-view="order"] > .source-panel { display: none; }
+            .main > .mobile-view-tabs { grid-column: 1 / -1; }
+        }
+
+        /* 欄寬微調：小計約四位數；單欄版價格及數量約三位數。保留水平捲動作為備援。 */
+        .columns {
+            grid-template-columns: 24px minmax(118px, var(--name-width, 220px)) 92px 85px 68px 32px;
+        }
+        @media (max-width: 1080px) {
+            .columns {
+                grid-template-columns: 24px minmax(118px, var(--name-width, 220px)) 58px 60px 68px 27px;
+                gap: 5px;
+            }
+            .number-wrap .field { padding-left: 5px; padding-right: 19px; }
+            .spin { width: 17px; }
+            .order-row .field[data-field="price"],
+            .order-row .field[data-field="qty"],
+            .order-row .field[data-field="subtotal"] { font-variant-numeric: tabular-nums; }
+            /* 選取來源後：所有可點擊填入的欄位與新增區一律呈現提示色。 */
+            .order-row .field.mobile-fill-ready,
+            .order-row .number-wrap.mobile-fill-ready,
+            #addRow.mobile-fill-ready {
+                border: 1px solid #1680c3;
+                background: #e8f5ff;
+                box-shadow: inset 0 0 0 1px #8ccbf0;
+                cursor: pointer;
+            }
+            .order-row .number-wrap.mobile-fill-ready { border-radius: 7px; }
+            .order-row .number-wrap.mobile-fill-ready .field {
+                border-color: transparent;
+                background: transparent;
+                cursor: pointer;
+            }
+            #addRow.mobile-fill-ready { border-style: dashed; }
+            #addRow.mobile-fill-ready .plus { color: #1680c3; border-color: #1680c3; }
+            .order-row .field.mobile-fill-ready:focus { background: #e8f5ff; }
+
+        }
+
+        /* 欄位標題固定在訂單清單的捲動區頂端（雙欄、單欄皆適用）。 */
+        .order-column-header {
+            position: sticky;
+            top: 0;
+            z-index: 12;
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            padding-top: 5px;
+            padding-bottom: 3px;
+            box-shadow: 0 2px 3px #24364a0d;
+        }
+        /* 清單與新增按鈕同步使用面板可用寬度；不足時保留原水平捲動。 */
+        .order-grid {
+            width: 100%;
+            min-width: max-content;
+        }
+        .order-grid .add-drop { box-sizing: border-box; }
+
     </style>
 </head>
 
@@ -901,18 +1037,22 @@
                 ↷ 重做
             </button>
             <button class="btn" id="exportBtn">
-                匯出備份
+                複製到剪貼簿
             </button>
             <button class="btn" id="importBtn">
-                匯入備份
+                從剪貼簿貼上
             </button>
             <button class="btn btn-primary" id="copyBtn">
                 複製訂單摘要
             </button>
         </div>
     </header>
-    <main class="main">
-        <section class="panel">
+    <main class="main" id="mainView" data-mobile-view="source">
+        <nav class="mobile-view-tabs" aria-label="手機版內容切換" role="tablist">
+            <button class="mobile-view-tab active" id="mobileSourceTab" type="button" role="tab" aria-selected="true" aria-controls="sourcePanel" data-mobile-tab="source">文字內容</button>
+            <button class="mobile-view-tab" id="mobileOrderTab" type="button" role="tab" aria-selected="false" aria-controls="orderPanel" data-mobile-tab="order">訂單統計</button>
+        </nav>
+        <section class="panel source-panel" id="sourcePanel">
             <div class="panel-header">
                 <h2>
                     文字內容
@@ -969,7 +1109,7 @@
                 </div>
             </div>
         </section>
-        <section class="panel">
+        <section class="panel order-panel" id="orderPanel">
             <div class="panel-header">
                 <h2>
                     訂單統計
@@ -993,13 +1133,11 @@
                 <div id="standardOrderView">
                     <div class="order-scroll">
                         <div class="order-grid" id="orderGrid">
-                            <div class="columns">
+                            <div class="columns order-column-header">
                                 <span>
                                 </span>
                                 <span class="col-head item-head">
                                     品項
-                                    <span class="resize-handle" id="resizeHandle" title="拖動調整品項欄寬">
-                                    </span>
                                 </span>
                                 <span class="col-head">
                                     價格
@@ -1043,7 +1181,7 @@
                         </span>
                     </div>
                     <p class="hintbar">
-                        小計可手動修改；小計右鍵可切換回自動計算。價格空白視為 0。重新整理或重開頁面會清空資料；需要保留時請使用匯出備份。
+                        小計可手動修改；小計右鍵可切換回自動計算。價格空白視為 0。重新整理或重開頁面會清空資料；需要保留時請使用「複製到剪貼簿」，將備份文字另行保存。
                     </p>
                 </div>
                 <div id="personalView" hidden>
@@ -1059,13 +1197,40 @@
             </div>
         </section>
     </main>
-    <input accept=".json,application/json" hidden="" id="importFile" type="file" />
+    <div id="pasteOverlay" class="paste-overlay" hidden>
+        <section class="paste-dialog" role="dialog" aria-modal="true" aria-labelledby="pasteTitle">
+            <h2 id="pasteTitle">貼上備份內容</h2>
+            <p>瀏覽器無法直接讀取剪貼簿時，請按 Ctrl+V 貼上先前複製的完整備份文字。</p>
+            <textarea id="pasteBackupText" placeholder="在此貼上備份 JSON 文字…" spellcheck="false"></textarea>
+            <div class="paste-actions">
+                <button class="btn" id="pasteCancel">取消</button>
+                <button class="btn btn-primary" id="pasteConfirm">還原備份</button>
+            </div>
+        </section>
+    </div>
     <div aria-live="polite" class="notice-stack" id="notices">
     </div>
     <script>
         (() => {
             'use strict';
             const $ = s => document.querySelector(s);
+            // 只切換單欄畫面顯示，不重建任何訂單、選取或收款資料。
+            document.querySelectorAll('[data-mobile-tab]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const view = button.dataset.mobileTab;
+                    $('#mainView').dataset.mobileView = view;
+                    document.querySelectorAll('[data-mobile-tab]').forEach(tab => {
+                        const active = tab.dataset.mobileTab === view;
+                        tab.classList.toggle('active', active);
+                        tab.setAttribute('aria-selected', String(active));
+                    });
+                    // 訂單欄原本隱藏時寬度為零，顯示後重新計算欄寬。
+                    if (view === 'order') requestAnimationFrame(() => {
+                        if (state.active !== 'personal') applyNameWidth();
+                    });
+                });
+            });
+
             const $$ = s => Array.from(document.querySelectorAll(s));
             const newRow = () => ({ id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 9), name: '', price: '', qty: 0, manual: null });
             const fresh = () => ({ raw: '', parsed: false, people: [], tokens: [], active: 'meal', categories: { meal: { rows: [newRow(), newRow(), newRow()], phone: '' }, drink: { rows: [newRow(), newRow(), newRow()], phone: '' } }, width: null, personal: [] });
@@ -1092,6 +1257,7 @@
                     return;
                 redo.push(snapshot());
                 state = JSON.parse(undo.pop());
+                state.width = null;
                 renderAll();
                 updateUndo();
             }
@@ -1100,6 +1266,7 @@
                     return;
                 undo.push(snapshot());
                 state = JSON.parse(redo.pop());
+                state.width = null;
                 renderAll();
                 updateUndo();
             }
@@ -1364,17 +1531,20 @@
             function autoSizeNames() {
                 document.querySelectorAll('.field-name').forEach(el => {
                     el.style.height = 'auto';
-                    el.style.height = Math.max(42, el.scrollHeight + 2) + 'px';
+                    el.style.height = Math.max(31, el.scrollHeight + 2) + 'px';
                 });
             }
-            // Default column width adapts to the visible order panel; manual resizing overrides this.
+            // 品項欄寬永遠依照目前訂單面板寬度自動調整。
             // Other grid columns total 330px, with five 9px gaps (45px).
             function fittedNameWidth() {
                 const space = $('.order-scroll').clientWidth;
-                return Math.max(118, Math.min(220, space - 26 - 92 - 85 - 95 - 32 - 5 * 9 - 6));
+                const narrow = matchMedia('(max-width: 1080px)').matches;
+                const fixed = narrow ? (24 + 58 + 60 + 68 + 27) : (24 + 92 + 85 + 68 + 32);
+                // 品項欄吃滿右側剩餘空間；只有窄到不足 118px 時才出現水平捲軸。
+                return Math.max(118, Math.floor(space - fixed - 5 * 5 - 8));
             }
             function applyNameWidth() {
-                $('#orderGrid').style.setProperty('--name-width', (state.width === null ? fittedNameWidth() : state.width) + 'px');
+                $('#orderGrid').style.setProperty('--name-width', fittedNameWidth() + 'px');
                 autoSizeNames();
             }
             function renderRows() {
@@ -1396,7 +1566,7 @@
                     const div = document.createElement('div');
                     div.className = 'columns order-row';
                     div.dataset.row = r.id;
-                    div.innerHTML = `<span class="idx" title="按住並拖曳以調整品項順序" aria-label="拖曳第${i + 1}項排序">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
+                    div.innerHTML = `<span class="idx" title="按住並拖曳以調整品項順序" aria-label="拖曳第${i + 1}項排序">${i + 1}.</span><textarea class="field field-name" data-drop="name" data-field="name" data-id="${r.id}" rows="1" autocomplete="off" aria-label="第${i + 1}項品項">${esc(r.name)}</textarea><input class="field" type="number" autocomplete="off" step="any" data-drop="price" data-field="price" data-id="${r.id}" value="${esc(r.price)}" aria-label="第${i + 1}項價格"><div class="number-wrap" data-drop="qty" data-row-id="${r.id}"><input class="field" type="number" autocomplete="off" step="1" min="0" data-drop="qty" data-field="qty" data-id="${r.id}" value="${r.qty}" aria-label="第${i + 1}項數量"><button class="spin up" data-spin="1" data-id="${r.id}" title="加一">▲</button><button class="spin down" data-spin="-1" data-id="${r.id}" title="減一">▼</button></div><input class="field" type="number" autocomplete="off" step="any" data-field="subtotal" data-drop="subtotal" data-subtotal="${r.id}" value="${rowTotal(r)}" title="可手動輸入，右鍵恢復自動" aria-label="第${i + 1}項小計"><button class="delete-btn" data-remove="${r.id}" title="刪除此項">⊗</button>`;
                     body.append(div);
                 });
                 applyNameWidth();
@@ -1462,11 +1632,21 @@
                 state.active = b.dataset.tab;
                 renderRows();
             });
+            // 新增訂單品項時，捲動訂單清單到底部；不影響整個頁面及水平捲動位置。
+            function scrollOrdersToBottom() {
+                const scroller = $('.order-scroll');
+                requestAnimationFrame(() => {
+                    if (scroller && !$('#standardOrderView').hidden) {
+                        scroller.scrollTop = scroller.scrollHeight;
+                    }
+                });
+            }
             function addRow() {
                 const before = snapshot();
                 state.categories[state.active].rows.push(newRow());
                 pushHistory(before);
                 renderRows();
+                scrollOrdersToBottom();
                 return state.categories[state.active].rows.at(-1);
             }
             $('#addRow').onclick = () => {
@@ -1499,10 +1679,11 @@
             function getRow(id) {
                 return state.categories[state.active].rows.find(r => r.id === id);
             }
-            // 訂單排序：編號按住拖曳，未放開前只顯示插入線，放開才更動資料。
-            // 使用 Pointer Events，同時支援滑鼠、觸控與觸控筆。
+            // 訂單排序：實體佔位列 + FLIP 動畫，放開後才修改 state。
+            // Pointer capture 放在穩定的父容器，避免移開原列後觸控事件中斷。
             let rowDrag = null;
-            $('#orderRows').addEventListener('pointerdown', e => {
+            const orderArea = $('#orderRows');
+            orderArea.addEventListener('pointerdown', e => {
                 const grip = e.target.closest('.order-row .idx');
                 if (!grip || (e.pointerType === 'mouse' && e.button !== 0) || rowDrag) return;
                 const rowElement = grip.closest('.order-row');
@@ -1510,33 +1691,55 @@
                 const originalIndex = rows.findIndex(r => r.id === rowElement.dataset.row);
                 if (originalIndex < 0) return;
                 e.preventDefault();
-                const marker = document.createElement('div');
-                marker.className = 'row-insertion-line';
-                marker.hidden = true;
-                document.body.append(marker);
                 const preview = document.createElement('div');
                 preview.className = 'row-drag-preview';
                 preview.textContent = (originalIndex + 1) + '. ' + (rows[originalIndex].name || '未命名品項');
                 preview.hidden = true;
                 document.body.append(preview);
                 rowDrag = { id: rowElement.dataset.row, category: state.active, originalIndex,
-                    startX: e.clientX, startY: e.clientY, moved: false, insertion: null,
-                    marker, preview, grip, rowElement, pointerId: e.pointerId };
-                grip.setPointerCapture(e.pointerId);
+                    startX: e.clientX, startY: e.clientY, moved: false, insertion: originalIndex,
+                    placeholder: null, preview, rowElement, pointerId: e.pointerId };
+                orderArea.setPointerCapture(e.pointerId);
             });
+            function placeRowPlaceholder(d, nextIndex) {
+                const others = [...orderArea.querySelectorAll('.order-row')];
+                nextIndex = Math.min(Math.max(nextIndex, 0), others.length);
+                if (nextIndex === d.insertion) return;
+                // 先量測舊位置，改變 DOM 佔位後將其他列從舊位置動畫移到新位置。
+                const oldTops = new Map(others.map(el => [el, el.getBoundingClientRect().top]));
+                const reference = others[nextIndex] || null;
+                orderArea.insertBefore(d.placeholder, reference);
+                d.insertion = nextIndex;
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                for (const el of others) {
+                    const delta = oldTops.get(el) - el.getBoundingClientRect().top;
+                    if (Math.abs(delta) > 0.5) {
+                        el.getAnimations().forEach(anim => anim.cancel());
+                        el.animate([{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0)' }],
+                            { duration: 160, easing: 'cubic-bezier(.2,.7,.2,1)' });
+                    }
+                }
+            }
             function updateRowDrag(e) {
                 const d = rowDrag;
                 if (!d || e.pointerId !== d.pointerId) return;
                 if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 5) return;
-                if (!d.moved) { d.moved = true; d.rowElement.classList.add('row-reordering'); }
+                if (!d.moved) {
+                    d.moved = true;
+                    const rect = d.rowElement.getBoundingClientRect();
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'row-sort-placeholder';
+                    placeholder.style.height = rect.height + 'px';
+                    d.rowElement.replaceWith(placeholder);
+                    d.placeholder = placeholder;
+                }
                 d.preview.hidden = false;
                 d.preview.style.left = (e.clientX + 17) + 'px';
                 d.preview.style.top = (e.clientY + 13) + 'px';
-                const area = $('#orderRows');
-                const bounds = area.getBoundingClientRect();
-                const scroll = area.closest('.order-scroll');
+                const bounds = orderArea.getBoundingClientRect();
+                const scroll = orderArea.closest('.order-scroll');
                 const viewport = scroll.getBoundingClientRect();
-                // 長清單接近上下邊緣時可持續捲動。
+                // 長清單靠近上下邊緣時可持續捲動；不更動水平捲動位置。
                 if (viewport.height > 0 && getComputedStyle(scroll).overflowY !== 'hidden') {
                     if (e.clientY < viewport.top + 30 && e.clientY >= viewport.top - 20) scroll.scrollTop -= 13;
                     else if (e.clientY > viewport.bottom - 30 && e.clientY <= viewport.bottom + 20) scroll.scrollTop += 13;
@@ -1544,40 +1747,41 @@
                 const inside = e.clientX >= bounds.left - 18 && e.clientX <= bounds.right + 18 &&
                     e.clientY >= Math.max(bounds.top - 16, viewport.top - 16) &&
                     e.clientY <= Math.min(bounds.bottom + 16, viewport.bottom + 16);
-                if (!inside) { d.insertion = null; d.marker.hidden = true; return; }
-                const others = [...area.querySelectorAll('.order-row')].filter(el => el !== d.rowElement);
+                if (!inside) {
+                    d.insertion = null;
+                    d.placeholder.style.opacity = '.45';
+                    return;
+                }
+                d.placeholder.style.opacity = '1';
+                const others = [...orderArea.querySelectorAll('.order-row')];
                 let index = others.findIndex(el => e.clientY < el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2);
                 if (index < 0) index = others.length;
-                d.insertion = index;
-                const reference = index < others.length ? others[index] : others[others.length - 1];
-                const rect = reference ? reference.getBoundingClientRect() : d.rowElement.getBoundingClientRect();
-                const y = index < others.length ? rect.top - 5 : rect.bottom + 5;
-                d.marker.style.left = (bounds.left + 4) + 'px';
-                d.marker.style.width = Math.max(30, bounds.width - 8) + 'px';
-                d.marker.style.top = y + 'px';
-                d.marker.hidden = false;
+                placeRowPlaceholder(d, index);
             }
-            $('#orderRows').addEventListener('pointermove', updateRowDrag);
+            orderArea.addEventListener('pointermove', updateRowDrag);
             function endRowDrag(e) {
                 const d = rowDrag;
                 if (!d || e.pointerId !== d.pointerId) return;
                 rowDrag = null;
-                d.marker.remove();
                 d.preview.remove();
-                d.rowElement.classList.remove('row-reordering');
-                if (e.type === 'pointercancel' || !d.moved || d.insertion === null || d.category !== state.active) return;
-                if (d.insertion === d.originalIndex) return;
+                if (d.placeholder) d.placeholder.replaceWith(d.rowElement);
+                if (e.type === 'pointercancel' || !d.moved || d.insertion === null || d.category !== state.active ||
+                    d.insertion === d.originalIndex) {
+                    // 取消時將 DOM 與原始資料同步，避免畫面順序留在預覽狀態。
+                    if (d.moved) renderRows();
+                    return;
+                }
                 const before = snapshot();
                 const rows = state.categories[d.category].rows;
                 const sourceIndex = rows.findIndex(r => r.id === d.id);
-                if (sourceIndex < 0) return;
+                if (sourceIndex < 0) { renderRows(); return; }
                 const [moved] = rows.splice(sourceIndex, 1);
                 rows.splice(d.insertion, 0, moved);
                 pushHistory(before);
                 renderRows();
             }
-            $('#orderRows').addEventListener('pointerup', endRowDrag);
-            $('#orderRows').addEventListener('pointercancel', endRowDrag);
+            orderArea.addEventListener('pointerup', endRowDrag);
+            orderArea.addEventListener('pointercancel', endRowDrag);
             const editBefore = new WeakMap();
             // 個人收款狀態與應付金額分開管理；每次切換可使用上方復原／重做。
             $('#personalGroups').addEventListener('click', e => {
@@ -1705,8 +1909,14 @@
             function decideDrop(kind, row, tokens) {
                 if (!tokens.length)
                     return { error: '請先選取左側項目' };
-                if (kind === 'subtotal')
-                    return { error: '小計欄位不接受拖曳' };
+                if (kind === 'subtotal') {
+                    if (tokens.length !== 1 || !pureNumber(tokens[0].text))
+                        return { error: '小計欄位只能填入單一純數字來源' };
+                    const value = Number(tokens[0].text);
+                    if (rowTotal(row) === value && row.manual !== null)
+                        return { error: '小計沒有變化，未處理來源物件' };
+                    return { row: { ...row, manual: value } };
+                }
                 const info = interpret(tokens);
                 if (kind === 'price') {
                     if (tokens.length !== 1)
@@ -1782,6 +1992,7 @@
                 pushHistory(before);
                 renderSource();
                 renderRows();
+                if (newItem) scrollOrdersToBottom();
                 return true;
             }
             // Pointer-based selection / rubber band / drag. Ctrl+marquee is deliberately not implemented.
@@ -1995,30 +2206,42 @@
                         toggleToken(t, e.ctrlKey);
                 }
             });
-            // Drag-to-resize shared name column.
-            const handle = $('#resizeHandle');
-            handle.addEventListener('pointerdown', e => {
+            // 單欄模式：選好來源，再點品項、價格、數量、小計或新增空白項即可放置。
+            // 沒有選取來源時，各欄維持原本的輸入或新增行為。
+            const isSingleColumn = () => matchMedia('(max-width: 1080px)').matches;
+            function updateMobileFillHints() {
+                const ready = isSingleColumn() && selected().length > 0;
+                document.querySelectorAll('#orderRows [data-drop="name"], #orderRows [data-drop="price"], #orderRows [data-drop="qty"], #orderRows [data-drop="subtotal"], #addRow').forEach(el => {
+                    el.classList.toggle('mobile-fill-ready', ready);
+                    if (ready) el.title = '點一下將已選來源填入此位置';
+                    else if (el.dataset.drop !== 'subtotal') el.removeAttribute('title');
+                    else el.title = '可手動輸入，右鍵恢復自動';
+                });
+            }
+            function mobileFillTarget(e) {
+                if (!isSingleColumn() || !selected().length) return null;
+                if (e.target.closest('[data-spin], [data-remove]')) return null;
+                const target = e.target.closest('[data-drop]');
+                if (!target || !['name', 'price', 'qty', 'subtotal', 'add'].includes(target.dataset.drop)) return null;
+                return target.dataset.drop === 'qty' ? (target.closest('.number-wrap') || target) : target;
+            }
+            // 先阻止獲取輸入焦點，以免手機鍵盤彈出。
+            document.querySelector('.right-body').addEventListener('pointerdown', e => {
+                if (mobileFillTarget(e)) e.preventDefault();
+            }, true);
+            // 採捕獲階段處理，避免新增行既填入來源又被原本 onclick 新增第二行。
+            document.querySelector('.right-body').addEventListener('click', e => {
+                const target = mobileFillTarget(e);
+                if (!target) return;
                 e.preventDefault();
                 e.stopPropagation();
-                const before = snapshot(), origin = e.clientX, start = state.width === null ? fittedNameWidth() : state.width;
-                document.body.classList.add('resizing');
-                handle.setPointerCapture(e.pointerId);
-                const move = ev => {
-                    state.width = Math.max(118, Math.min(520, start + ev.clientX - origin));
-                    $('#orderGrid').style.setProperty('--name-width', state.width + 'px');
-                    autoSizeNames();
-                };
-                const done = () => {
-                    handle.removeEventListener('pointermove', move);
-                    handle.removeEventListener('pointerup', done);
-                    handle.removeEventListener('pointercancel', done);
-                    document.body.classList.remove('resizing');
-                    pushHistory(before);
-                };
-                handle.addEventListener('pointermove', move);
-                handle.addEventListener('pointerup', done);
-                handle.addEventListener('pointercancel', done);
-            });
+                const tokens = selected();
+                if (commitDrop(target, tokens)) notify('已填入 ' + tokens.length + ' 個來源項目');
+            }, true);
+            const fillObserver = new MutationObserver(updateMobileFillHints);
+            fillObserver.observe($('#orderRows'), { childList: true });
+            fillObserver.observe($('#selectionInfo'), { childList: true, characterData: true, subtree: true });
+            window.addEventListener('resize', updateMobileFillHints);
             $('#undoBtn').onclick = undoOp;
             $('#redoBtn').onclick = redoOp;
             document.addEventListener('keydown', e => {
@@ -2057,48 +2280,100 @@
                         notify('已複製訂單摘要');
                     }
                     catch (e) {
-                        notify('複製失敗，請改用匯出備份', 'error');
+                        notify('複製失敗，請檢查瀏覽器剪貼簿權限', 'error');
                     }
                     a.remove();
                 }
             };
-            $('#exportBtn').onclick = () => {
-                const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
-                a.href = url;
-                a.download = '午餐訂單備份-' + new Date().toISOString().slice(0, 10) + '.json';
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            // 保留原始狀態 JSON 格式，與舊版匯出的 .json 備份相容。
+            async function copyBackupText(text) {
+                if (navigator.clipboard?.writeText) {
+                    try { await navigator.clipboard.writeText(text); return true; } catch (_) { }
+                }
+                const box = document.createElement('textarea');
+                box.value = text;
+                box.style.cssText = 'position:fixed;left:-9999px;top:0';
+                document.body.append(box);
+                box.focus();
+                box.select();
+                let copied = false;
+                try { copied = document.execCommand('copy'); } catch (_) { }
+                box.remove();
+                return copied;
+            }
+            $('#exportBtn').onclick = async () => {
+                const backup = JSON.stringify(state, null, 2);
+                if (await copyBackupText(backup)) {
+                    notify('完整備份已複製到剪貼簿，請貼到記事本或其他安全位置保存');
+                } else {
+                    // 某些 file:// 環境會封鎖剪貼簿 API；仍提供手動複製途徑。
+                    showPasteDialog(backup, true);
+                    notify('瀏覽器限制自動複製，請在彈出視窗全選並複製備份文字', 'error');
+                }
             };
-            $('#importBtn').onclick = () => $('#importFile').click();
-            $('#importFile').onchange = async (e) => {
-                const f = e.target.files[0];
-                if (!f)
-                    return;
+            function restoreBackup(text) {
+                let d;
                 try {
-                    const d = JSON.parse(await f.text());
-                    if (!d.categories?.meal?.rows || !d.categories?.drink?.rows || !Array.isArray(d.tokens) || !Array.isArray(d.people))
-                        throw Error();
-                    const before = snapshot();
-                    state = d;
-                    state.width = typeof state.width === 'number' ? state.width : null;
-                    if (!Array.isArray(state.personal)) state.personal = buildPersonalRows(state.people);
-                    state.tokens.forEach(t => {
-                        if (t.status === 'selected')
-                            t.status = 'normal';
-                    });
-                    pushHistory(before);
-                    renderAll();
-                    notify('備份已匯入');
+                    d = JSON.parse(text.trim());
+                    if (!d || !d.categories || !Array.isArray(d.categories.meal?.rows) ||
+                        !Array.isArray(d.categories.drink?.rows) ||
+                        !Array.isArray(d.tokens) || !Array.isArray(d.people)) throw Error();
+                } catch (_) {
+                    notify('還原失敗：剪貼簿內容不是有效的點餐備份', 'error');
+                    return false;
                 }
-                catch (err) {
-                    notify('匯入失敗：備份檔案格式不正確', 'error');
+                const before = snapshot();
+                state = d;
+                state.active = ['meal', 'drink', 'personal'].includes(state.active) ? state.active : 'meal';
+                state.width = null; // 舊版備份的手動欄寬不再使用
+                if (!Array.isArray(state.personal)) state.personal = buildPersonalRows(state.people);
+                state.tokens.forEach(t => { if (t.status === 'selected') t.status = 'normal'; });
+                pushHistory(before);
+                renderAll();
+                notify('備份已從剪貼簿還原');
+                return true;
+            }
+            function showPasteDialog(content = '', copyMode = false) {
+                $('#pasteOverlay').hidden = false;
+                $('#pasteTitle').textContent = copyMode ? '手動複製備份' : '貼上備份內容';
+                $('#pasteConfirm').hidden = copyMode;
+                $('#pasteBackupText').value = content;
+                $('#pasteBackupText').readOnly = copyMode;
+                $('#pasteBackupText').focus();
+                if (copyMode) $('#pasteBackupText').select();
+            }
+            function closePasteDialog() { $('#pasteOverlay').hidden = true; }
+            $('#importBtn').onclick = async () => {
+                if (navigator.clipboard?.readText) {
+                    try {
+                        const content = await navigator.clipboard.readText();
+                        if (content.trim()) { restoreBackup(content); return; }
+                    } catch (_) { /* 權限受限時改以 Ctrl+V 手動貼上 */ }
                 }
-                e.target.value = '';
+                showPasteDialog();
+                notify('請在文字框按 Ctrl+V 貼上備份，再按「還原備份」');
             };
-            window.addEventListener('resize', () => {
-                if (state.width === null)
-                    applyNameWidth();
+            $('#pasteConfirm').onclick = () => {
+                if (restoreBackup($('#pasteBackupText').value)) closePasteDialog();
+            };
+            $('#pasteCancel').onclick = closePasteDialog;
+            $('#pasteOverlay').addEventListener('click', e => {
+                if (e.target === $('#pasteOverlay')) closePasteDialog();
             });
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && !$('#pasteOverlay').hidden) closePasteDialog();
+            });
+            window.addEventListener('resize', () => {
+                applyNameWidth();
+            });
+            // 分割視窗、視窗面板寬度變更時，也同步更新品項欄寬。
+            if (typeof ResizeObserver !== 'undefined') {
+                const orderWidthObserver = new ResizeObserver(() => {
+                    if ($('.order-scroll').clientWidth > 0)
+                        applyNameWidth();
+                });
+                orderWidthObserver.observe($('.order-scroll'));
+            }
             renderAll();
             // Do not persist working data across reload, navigation, or browser restart.
             // The pageshow event also handles values restored by the browser's form cache / BFCache.
