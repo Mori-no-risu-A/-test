@@ -510,11 +510,12 @@
         /* 排序時 DOM 順序不變，跨過判定線後才讓其他列以 CSS 平滑移動。 */
         #orderRows { position: relative; }
         .order-row.sort-shifting {
-            transition: transform 400ms cubic-bezier(.15,.85,.25,1);
+            transition: transform 450ms cubic-bezier(.15,.85,.25,1);
             will-change: transform;
         }
+        /* 拖曳中的原始列不顯示殘影，但保留原本的排版空間。 */
         .order-row.sort-source {
-            opacity: .18;
+            visibility: hidden;
         }
         .row-sort-placeholder {
             position: absolute;
@@ -525,7 +526,7 @@
             background: rgba(22,137,204,.12);
             box-shadow: inset 0 0 0 1px #ffffff80;
             /* 提示框先固定在來源列，再用 transform 動畫移到目標列。 */
-            transition: transform 400ms cubic-bezier(.15,.85,.25,1);
+            transition: transform 450ms cubic-bezier(.15,.85,.25,1);
             will-change: transform;
         }
         .row-sort-placeholder::after {
@@ -1207,7 +1208,7 @@
     <div id="pasteOverlay" class="paste-overlay" hidden>
         <section class="paste-dialog" role="dialog" aria-modal="true" aria-labelledby="pasteTitle">
             <h2 id="pasteTitle">貼上備份內容</h2>
-            <p>瀏覽器無法直接讀取剪貼簿時，請按 Ctrl+V 貼上先前複製的完整備份文字。</p>
+            <p>如果自動還原失敗，可按 Win + V 選擇剪貼簿歷程中的正確備份，或按 Ctrl + V 貼上備份文字。</p>
             <textarea id="pasteBackupText" placeholder="在此貼上備份 JSON 文字…" spellcheck="false"></textarea>
             <div class="paste-actions">
                 <button class="btn" id="pasteCancel">取消</button>
@@ -1686,7 +1687,8 @@
             function getRow(id) {
                 return state.categories[state.active].rows.find(r => r.id === id);
             }
-            // 保留原來的「跨過中心線才換位」判定；動畫改交給 CSS transition。
+            // 單行目標維持中心線；多行目標從靠近拖曳來源的一側進入 30px 後換位。
+            // 讓位動畫仍由 CSS transition 控制。
             // 重要：在 pointerdown 就完成初始 transform 與 transition 的設定，
             // 並讀取 layout，避免加入動畫類別、設定新位移發生在同一渲染批次而瞬移。
             let rowDrag = null;
@@ -1741,14 +1743,24 @@
                 preview.textContent = (originalIndex + 1) + '. ' + (dataRows[originalIndex].name || '未命名品項');
                 preview.hidden = true;
                 document.body.append(preview);
-                const centers = rows.map(el => sortLocalTop(el) + el.offsetHeight / 2);
+                const thresholds = rows.map((el, i) => {
+                    const top = sortLocalTop(el);
+                    const height = el.offsetHeight;
+                    const nameInput = el.querySelector('.field-name');
+                    // textarea 的實際高度增加，表示品項已經自動換成多行。
+                    const multiLine = nameInput && nameInput.offsetHeight > 48;
+                    if (!multiLine) return top + height / 2;
+                    // 拖曳來源在目標下方：往上跨過目標底部 30px。
+                    // 拖曳來源在目標上方：往下跨過目標頂部 30px。
+                    return i < originalIndex ? top + height - 30 : top + 30;
+                });
                 const blockHeights = rows.map(sortBlockHeight);
                 const rowTops = rows.map(sortLocalTop);
                 rowDrag = {id: rowElement.dataset.row, category: state.active, originalIndex,
                     startX: e.clientX, startY: e.clientY, startLocalY: e.clientY - bounds.top,
                     pointerY: e.clientY - bounds.top, moved: false, insertion: originalIndex,
                     placeholder: null, preview, rowElement, pointerId: e.pointerId,
-                    rows, centers, rowTops, blockHeights, sourceTop: sortLocalTop(rowElement),
+                    rows, thresholds, rowTops, blockHeights, sourceTop: sortLocalTop(rowElement),
                     sourceBlockHeight: blockHeights[originalIndex],
                     inside: true};
                 // 初始 transform 必須在開始拖曳的下一個 pointermove 前建立。
@@ -1797,10 +1809,10 @@
                     e.clientY >= Math.max(bounds.top - 16, viewport.top - 16) &&
                     e.clientY <= Math.min(bounds.bottom + 16, viewport.bottom + 16);
                 d.placeholder.style.opacity = d.inside ? '1' : '.35';
-                // 只有跨過其他列的中心判定線，才更新插入目標。動畫由下一影格平滑讓位。
+                // 單行採中心線；多行採靠近來源一側的固定 30px 判定線。
                 let insertion = 0;
-                d.centers.forEach((center, i) => {
-                    if (i !== d.originalIndex && d.pointerY > center) insertion++;
+                d.thresholds.forEach((threshold, i) => {
+                    if (i !== d.originalIndex && d.pointerY > threshold) insertion++;
                 });
                 const nextInsertion = clampSort(insertion, 0, d.rows.length - 1);
                 if (nextInsertion !== d.insertion) {
@@ -2398,11 +2410,12 @@
                 if (navigator.clipboard?.readText) {
                     try {
                         const content = await navigator.clipboard.readText();
-                        if (content.trim()) { restoreBackup(content); return; }
+                        if (content.trim() && restoreBackup(content)) return;
+                        // 剪貼簿有內容但不是合法備份時，仍開啟手動選擇視窗。
                     } catch (_) { /* 權限受限時改以 Ctrl+V 手動貼上 */ }
                 }
                 showPasteDialog();
-                notify('請在文字框按 Ctrl+V 貼上備份，再按「還原備份」');
+                notify('請按 Win + V 選擇正確備份（或 Ctrl + V 貼上），再按「還原備份」');
             };
             $('#pasteConfirm').onclick = () => {
                 if (restoreBackup($('#pasteBackupText').value)) closePasteDialog();
