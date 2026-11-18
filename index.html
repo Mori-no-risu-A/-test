@@ -19,9 +19,35 @@
             box-sizing: border-box;
         }
 
+        /* 全站視窗高度：桌面與手機共用，避免 vh 最小高度覆蓋 dvh。 */
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             margin: 0;
+            width: 100%;
+            height: 100%; /* 舊版瀏覽器 fallback */
+            height: 100dvh;
             min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 手機根捲動容器保留原生下拉重整；頁面高度仍固定在可視範圍。 */
+        @media (max-width: 1080px) {
+            html {
+                overflow-x: hidden;
+                overflow-y: auto;
+                overscroll-behavior-y: auto;
+            }
+            body {
+                overflow: visible;
+                overscroll-behavior-y: auto;
+            }
         }
 
         button,
@@ -1148,36 +1174,10 @@
         .help-content h3 { margin:13px 0 3px; font-size:14px; }
         .help-content p { margin:2px 0 10px; }
         .source-panel .help, .order-panel .hintbar { display:none; }
-        @media (width > 1080px) {
-            .main { height:calc(100dvh - 93px); min-height:460px; align-items:stretch; }
-            .main > .panel { height:100%; min-height:0; }
-            .source-panel { display:flex; flex-direction:column; min-height:0; }
-            .source-panel .left-body { flex:1; min-height:0; display:flex; flex-direction:column; }
-            #tokensView:not([hidden]) { flex:1; min-height:0; display:flex; flex-direction:column; }
-            .tokens-wrap { flex:1; min-height:0; height:auto; }
-            .order-scroll, .personal-scroll { height:auto; max-height:none; overflow:auto; }
-        }
         @media (width <= 1080px) {
-            .order-panel .right-body { min-height:0; }
-            #standardOrderView, #personalView { flex:initial; min-height:0; }
-            .order-scroll, .personal-scroll { flex:initial; height:auto; min-height:0; max-height:none; }
-            /* 保留在訂單面板內的表格尾列，不作獨立懸浮結帳面板。 */
-            .order-panel { overflow: visible; }
-            /* 讓黏性統計列真正貼齊面板尾端，不被額外內距往上推。 */
             .order-panel .right-body { padding-bottom:0; }
-            /* 消除整頁最底部的額外空間，避免 sticky 遇到父層終點時上移。 */
-            .main { margin-bottom:0; }
             .order-fixed-footer {
-                position:sticky;
-                bottom:0;
-                left:auto;
-                right:auto;
-                width:100%;
                 padding:4px 0 max(4px, env(safe-area-inset-bottom));
-                border-top:1px solid #e6ebf1;
-                box-shadow:none;
-                background:#fff;
-                z-index:8;
             }
             .order-panel .panel-header { flex-wrap:wrap; }
             .order-mini-stats { font-size:11px; gap:4px 10px; }
@@ -1213,55 +1213,6 @@
 
         /* display:flex 不可覆蓋 HTML hidden 屬性：確認後必須隱藏輸入框。 */
         #inputView[hidden], #tokensView[hidden] { display:none !important; }
-
-        /* 手機與平板：整頁不再捲動，改由清單容器自行垂直捲動。
-           導覽與金額列都維持在面板中，不使用 sticky/fixed 浮層。 */
-        @media (width <= 1080px) {
-            html, body { height:100%; max-height:100%; overflow:hidden; }
-            body { height:100dvh; display:flex; flex-direction:column; }
-            .topbar { flex:0 0 auto; }
-            .main {
-                display:flex; flex-direction:column; flex:1 1 auto;
-                min-height:0; width:100%; max-width:1640px;
-                margin:0 auto; padding:7px; gap:7px;
-                overflow:hidden; align-items:stretch;
-            }
-            .main > .mobile-view-tabs { flex:0 0 auto; }
-            .main > .panel { flex:1 1 auto; min-height:0; overflow:hidden; }
-            .source-panel, .order-panel { display:flex; flex-direction:column; }
-            .source-panel .panel-header, .order-panel .panel-header,
-            .order-panel .tabs { flex:0 0 auto; }
-            .source-panel .left-body, .order-panel .right-body {
-                display:flex; flex-direction:column; flex:1 1 auto;
-                min-height:0; overflow:hidden;
-            }
-            #tokensView:not([hidden]) {
-                display:flex; flex-direction:column; flex:1 1 auto;
-                min-height:0;
-            }
-            #tokensView .source-toolbar, #tokensView .source-footer { flex:0 0 auto; }
-            .tokens-wrap {
-                height:auto; max-height:none; min-height:0;
-                flex:1 1 auto; overflow:auto; overscroll-behavior:contain;
-                -webkit-overflow-scrolling:touch;
-            }
-            #inputView { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-            #inputView .raw-input { flex:1 1 auto; min-height:100px; height:auto; }
-            #inputView .raw-actions { flex:0 0 auto; }
-            #standardOrderView:not([hidden]), #personalView:not([hidden]) {
-                display:flex; flex-direction:column; flex:1 1 auto; min-height:0;
-            }
-            .order-scroll, .personal-scroll, #personalScroll {
-                flex:1 1 auto; height:auto; max-height:none; min-height:0;
-                overflow:auto; overscroll-behavior:contain;
-                -webkit-overflow-scrolling:touch;
-            }
-            .order-fixed-footer {
-                position:relative; bottom:auto; left:auto; right:auto;
-                flex:0 0 auto; z-index:1; box-shadow:none;
-                background:#fff;
-            }
-        }
 
         /* 緊湊化：標題與切換按鈕同列，清單空間不再浪費在第二層分頁列。 */
         .order-panel > .panel-header {
@@ -1302,122 +1253,98 @@
             padding: 8px;
         }
 
-        /* 縮放適應：頂部工具列可換行，面板直接使用剩餘視窗高度；
-           不再假設工具列一定是 93px，也不強制最小 460px。 */
-        html { height:100%; }
-        body { height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
-        .topbar { flex:0 0 auto; }
-        @media (width > 1080px) {
-            .main {
-                flex:1 1 auto;
-                height:auto;
-                min-height:0;
-                width:100%;
-                max-width:none;
-                margin:11px 0;
-                align-items:stretch;
-            }
-            .main > .panel { height:100%; min-height:0; }
+        /* 統一高度與捲動配置：共同結構、桌面雙欄、手機分頁。 */
+        .topbar { flex: 0 0 auto; }
+        .main {
+            display: flex;
+            flex: 1 1 0%;
+            height: 0;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            align-items: stretch;
         }
-        @media (width <= 1080px) {
-            .main { height:auto; min-height:0; }
+        .main > .panel,
+        .source-panel > .left-body,
+        .order-panel > .right-body,
+        #inputView:not([hidden]),
+        #tokensView:not([hidden]),
+        #standardOrderView:not([hidden]),
+        #personalView:not([hidden]) {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 0%;
+            min-height: 0;
+            min-width: 0;
         }
+        .source-panel > .panel-header,
+        .order-panel > .panel-header,
+        .main > .mobile-view-tabs,
+        #tokensView .source-toolbar,
+        #tokensView .source-footer,
+        #inputView .raw-actions,
+        .order-fixed-footer { flex: 0 0 auto; }
 
-        /* 桌面高度以可用視窗空間為準；Grid 軌道及 Flex 子項允許縮小，
-           訂單多時僅清單產生捲軸，不推走下方統計列。 */
+        #inputView .raw-input,
+        #tokensView .tokens-wrap,
+        #standardOrderView .order-scroll,
+        #personalView .personal-scroll {
+            flex: 1 1 0%;
+            height: 0;
+            min-height: 0;
+            max-height: none;
+            overflow: auto;
+            overscroll-behavior: contain;
+        }
+        #inputView .raw-input { resize: none; }
+        .order-fixed-footer { position: relative; z-index: 1; }
+
         @media (width > 1080px) {
             .main {
-                grid-template-rows: minmax(0, 1fr);
+                flex-direction: row;
+                max-width: none;
+                margin: 11px 0;
                 overflow: hidden;
-                min-height: 0;
             }
             .main > .panel {
-                min-height: 0;
-                max-height: 100%;
-                overflow: hidden;
-            }
-            .source-panel, .order-panel,
-            .source-panel .left-body, .order-panel .right-body,
-            #standardOrderView:not([hidden]), #personalView:not([hidden]) {
-                min-height: 0;
-                overflow: hidden;
-            }
-            .order-scroll, .personal-scroll, .tokens-wrap {
-                flex: 1 1 0%;
-                height: auto;
-                min-height: 0;
-                max-height: none;
-                overflow-y: auto;
-            }
-            .order-fixed-footer { flex: 0 0 auto; }
-        }
-
-        /* 桌面版高度結構重建：改用單一 Flex 主軸分配，不讓 Grid 自動列高被品項內容撐開。 */
-        @media (width > 1080px) {
-            html, body { width: 100%; height: 100%; }
-            body { height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-            .topbar { flex: 0 0 auto; }
-            .main {
-                display: flex;
-                flex-direction: row;
-                flex: 1 1 0%;
-                height: 0;
-                min-height: 0;
-                max-height: none;
-                min-width: 0;
-                width: 100%;
-                max-width: none;
-                overflow: hidden;
-                align-items: stretch;
-                margin: 11px 0;
-            }
-            .main > .source-panel,
-            .main > .order-panel {
-                flex: 1 1 0%;
                 width: 0;
                 height: auto;
-                min-width: 0;
-                min-height: 0;
-                max-height: none;
-                display: flex;
-                flex-direction: column;
                 overflow: hidden;
             }
-            .source-panel > .panel-header,
-            .order-panel > .panel-header { flex: 0 0 auto; }
             .source-panel > .left-body,
-            .order-panel > .right-body {
-                flex: 1 1 0%;
-                height: 0;
-                min-height: 0;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-            }
+            .order-panel > .right-body,
             #inputView:not([hidden]),
             #tokensView:not([hidden]),
             #standardOrderView:not([hidden]),
-            #personalView:not([hidden]) {
-                flex: 1 1 0%;
-                height: 0;
-                min-height: 0;
-                display: flex;
+            #personalView:not([hidden]) { height: 0; overflow: hidden; }
+        }
+
+        @media (max-width: 1080px) {
+            .main {
                 flex-direction: column;
-                overflow: hidden;
+                max-width: 1640px;
+                margin: 0 auto;
+                padding: 7px;
+                gap: 7px;
             }
+            /* clip 不建立捲動容器，讓手勢可傳到根視窗。 */
+            .main, .main > .panel,
+            .source-panel > .left-body,
+            .order-panel > .right-body { overflow: clip; }
+            .main > .panel { height: 0; }
+            .source-panel > .left-body,
+            .order-panel > .right-body,
+            #inputView:not([hidden]),
+            #tokensView:not([hidden]),
+            #standardOrderView:not([hidden]),
+            #personalView:not([hidden]) { height: 0; }
             #inputView .raw-input,
             #tokensView .tokens-wrap,
             #standardOrderView .order-scroll,
             #personalView .personal-scroll {
-                flex: 1 1 0%;
-                height: 0;
-                min-height: 0;
-                max-height: none;
-                overflow-y: auto;
-                overscroll-behavior: contain;
+                overscroll-behavior: auto;
+                -webkit-overflow-scrolling: touch;
             }
-            #inputView .raw-input { resize: none; }
-            .order-fixed-footer { flex: 0 0 auto; }
         }
         /* 固定欄位標題與第一筆訂單保持距離，避免拖放提示的外擴 outline 被標題遮住。 */
         #orderRows {
